@@ -67,7 +67,9 @@ void setup()
 
     Serial.printf("Firmware started successfully\n");
 
+#if 0 /* activate this line to get a tone on startup to test the DAC */
     Synth_NoteOn(64);
+#endif
 }
 
 
