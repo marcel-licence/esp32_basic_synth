@@ -66,6 +66,8 @@ void setup()
     Serial.printf("ESP.getMaxAllocHeap() %d\n", ESP.getMaxAllocHeap());
 
     Serial.printf("Firmware started successfully\n");
+
+    Synth_NoteOn(64);
 }
 
 
