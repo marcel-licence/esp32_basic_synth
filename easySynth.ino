@@ -8,13 +8,28 @@
  * Author: Marcel Licence
  */
 
+/*
+ * activate the following macro to enable unison mode
+ * by default the saw wave form will be used
+ * the waveform controllers are remapped to
+ * - waveform1 -> detune
+ * - waveform2 -> oscillator count
+ */
+//#define USE_UNISON
+
 
 /*
  * Following defines can be changed for different puprposes
  */
+#ifdef USE_UNISON
+/* use another setting, because unison supports more than 2 osc per voice */
+#define MAX_DETUNE		12 /* 1 + 11 additional tones */
+#define MAX_POLY_OSC	36 /* osc polyphony, always active reduces single voices max poly */
+#define MAX_POLY_VOICE	3  /* max single voices, can use multiple osc */
+#else
 #define MAX_POLY_OSC	24 /* osc polyphony, always active reduces single voices max poly */
 #define MAX_POLY_VOICE	12 /* max single voices, can use multiple osc */
-
+#endif
 
 
 /*
@@ -30,6 +45,10 @@
 
 #define MIDI_NOTE_CNT 128
 uint32_t midi_note_to_add[MIDI_NOTE_CNT]; /* lookup to playback waveforms with correct frequency */
+
+#ifdef USE_UNISON
+uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
+#endif
 
 /*
  * set the correct count of available waveforms
@@ -55,8 +74,17 @@ float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tr
 /*
  * pre selected waveforms
  */
+
+
+#ifdef USE_UNISON
+static float detune = 0.1; /* detune parameter */
+static uint8_t unison = 0; /* additional osc per voice count */
+float **selectedWaveForm =  &saw;
+float **selectedWaveForm2 =  &saw;
+#else
 float **selectedWaveForm =  &pulse;
 float **selectedWaveForm2 =  &silence;
+#endif
 
 
 
@@ -205,6 +233,13 @@ void Synth_Init()
         float f = ((pow(2.0f, (float)(i - 69) / 12.0f) * 440.0f));
         uint32_t add = (uint32_t)(f * ((float)(1ULL << 32ULL) / ((float)SAMPLE_RATE)));
         midi_note_to_add[i] = add;
+#ifdef USE_UNISON
+        /* filling the table which will be used for detuning */
+        float f1 = (pow(2.0f, ((float)(i - 69) + 0.5f) / 12.0f) * 440.0f);
+        float f2 = (pow(2.0f, ((float)(i - 69) - 0.5f) / 12.0f) * 440.0f);
+
+        midi_note_to_add50c[i] = (uint32_t)((f1 - f2) * ((float)(1ULL << 32ULL) / ((float)SAMPLE_RATE)));
+#endif
     }
 
     /*
@@ -353,6 +388,11 @@ static uint32_t count = 0;
 //[[gnu::noinline, gnu::optimize ("fast-math")]]
 inline void Synth_Process(float *left, float *right)
 {
+#ifdef USE_UNISON
+    /* we need random for detuning to avoid producing bad sounds */
+    randomSeed(34547379);
+#endif
+
     /*
      * generator simulation, rotate all wheels
      */
@@ -516,8 +556,19 @@ inline void Synth_NoteOn(uint8_t note)
     /*
      * add oscillator
      */
-
-    osc->addVal = midi_note_to_add[note];
+#ifdef USE_UNISON
+    if (unison > 0 )
+    {
+        /*
+         * shift first oscillator down
+         */
+        osc->addVal = midi_note_to_add[note] + ((0 - (unison * 0.5)) * midi_note_to_add50c[note] * detune / unison);
+    }
+    else
+#endif
+    {
+        osc->addVal = midi_note_to_add[note];
+    }
     osc->samplePos = 0;
     osc->waveForm = *selectedWaveForm;
     osc->dest = voice->lastSample;
@@ -527,6 +578,49 @@ inline void Synth_NoteOn(uint8_t note)
     osc_act += 1;
 
 
+#ifdef USE_UNISON
+
+    int8_t pan = 1;
+
+    /*
+     * attach more oscillators to voice
+     */
+    for (int i = 0; i < unison; i++)
+    {
+        osc = getFreeOsc();
+        if (osc == NULL)
+        {
+            //Serial.printf("voc: %d, osc: %d\n", voc_act, osc_act);
+            return ;
+        }
+
+        osc->addVal = midi_note_to_add[note] + ((i + 1 - (unison * 0.5)) * midi_note_to_add50c[note] * detune / unison);
+        osc->samplePos = (uint32_t)random(1 << 31); /* otherwise it sounds ... bad!? */
+        osc->waveForm = *selectedWaveForm2;
+        osc->dest = voice->lastSample;
+
+        /*
+         * put last osc in the middle
+         */
+        if ((unison - 1) == i)
+        {
+            osc->pan_l = 1;
+            osc->pan_r = 1;
+        }
+        else if (pan == 1)
+        {
+            osc->pan_l = 1;
+            osc->pan_r = 0.5;
+        }
+        else
+        {
+            osc->pan_l = 0.5;
+            osc->pan_r = 1;
+        }
+        pan = -pan; /* make a stereo sound by putting the oscillator left/right */
+        osc_act += 1;
+    }
+#else
     osc = getFreeOsc();
     if (osc != NULL)
     {
@@ -542,7 +636,7 @@ inline void Synth_NoteOn(uint8_t note)
             osc_act += 1;
         }
     }
-
+#endif
 
     /*
      * trying to avoid audible suprises
@@ -575,6 +669,16 @@ void Synth_SetRotary(uint8_t rotary, float value)
 {
     switch (rotary)
     {
+#ifdef USE_UNISON
+    case 0:
+        detune = value;
+        Serial.printf("detune: %0.3f cent\n", detune * 50);
+        break;
+    case 1:
+        unison = (uint8_t)(MAX_DETUNE * value);
+        Serial.printf("unison: 1 + %d\n", unison);
+        break;
+#else
     case 0:
         {
             uint8_t selWaveForm = (value) * (WAVEFORM_TYPE_COUNT);
@@ -588,6 +692,7 @@ void Synth_SetRotary(uint8_t rotary, float value)
             selectedWaveForm2 = waveFormLookUp[selWaveForm];
             Serial.printf("selWaveForm2: %d\n", selWaveForm);
         }
+#endif
         break;
     case 2:
         Delay_SetLength(value);
