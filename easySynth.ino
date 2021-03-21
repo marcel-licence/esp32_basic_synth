@@ -27,8 +27,8 @@
 #define MAX_POLY_OSC	36 /* osc polyphony, always active reduces single voices max poly */
 #define MAX_POLY_VOICE	3  /* max single voices, can use multiple osc */
 #else
-#define MAX_POLY_OSC	24 /* osc polyphony, always active reduces single voices max poly */
-#define MAX_POLY_VOICE	12 /* max single voices, can use multiple osc */
+#define MAX_POLY_OSC	20 /* osc polyphony, always active reduces single voices max poly */
+#define MAX_POLY_VOICE	10 /* max single voices, can use multiple osc */
 #endif
 
 
@@ -53,7 +53,7 @@ uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
 /*
  * set the correct count of available waveforms
  */
-#define WAVEFORM_TYPE_COUNT	7
+#define WAVEFORM_TYPE_COUNT	8
 
 /*
  * add here your waveforms
@@ -66,10 +66,14 @@ float *tri = NULL;
 float *noise = NULL;
 float *silence = NULL;
 
+/* the values here don't care, check will be done in oscillator to create static noise */
+float noiseSignal = 0.0f;
+float *realNoise = &noiseSignal;
+
 /*
  * do not forget to enter the waveform pointer addresses here
  */
-float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tri, &noise, &silence};
+float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tri, &noise, &silence, &realNoise};
 
 /*
  * pre selected waveforms
@@ -415,10 +419,23 @@ inline void Synth_Process(float *left, float *right)
     {
         oscillatorT *osc = &oscPlayer[i];
         {
-            osc->samplePos += osc->addVal;
-            float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
-            osc->dest[0] += osc->pan_l * sig;
-            osc->dest[1] += osc->pan_r * sig;
+#ifndef USE_UNISON
+            if (osc->waveForm != realNoise) /* this if reduces max poly to 10 */
+#endif
+            {
+                osc->samplePos += osc->addVal;
+                float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
+                osc->dest[0] += osc->pan_l * sig;
+                osc->dest[1] += osc->pan_r * sig;
+            }
+#ifndef USE_UNISON
+            else /* if a real noise should be used */
+            {
+                float nz = ((random(1024) / 512.0f) - 1.0f);
+                osc->dest[0] += osc->pan_l * nz;
+                osc->dest[1] += osc->pan_r * nz;
+            }
+#endif
         }
     }
 
