@@ -27,8 +27,8 @@
 #define MAX_POLY_OSC	36 /* osc polyphony, always active reduces single voices max poly */
 #define MAX_POLY_VOICE	3  /* max single voices, can use multiple osc */
 #else
-#define MAX_POLY_OSC	20 /* osc polyphony, always active reduces single voices max poly */
-#define MAX_POLY_VOICE	10 /* max single voices, can use multiple osc */
+#define MAX_POLY_OSC	22 /* osc polyphony, always active reduces single voices max poly */
+#define MAX_POLY_VOICE	11 /* max single voices, can use multiple osc */
 #endif
 
 
@@ -53,7 +53,7 @@ uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
 /*
  * set the correct count of available waveforms
  */
-#define WAVEFORM_TYPE_COUNT	8
+#define WAVEFORM_TYPE_COUNT	7
 
 /*
  * add here your waveforms
@@ -66,14 +66,10 @@ float *tri = NULL;
 float *noise = NULL;
 float *silence = NULL;
 
-/* the values here don't care, check will be done in oscillator to create static noise */
-float noiseSignal = 0.0f;
-float *realNoise = &noiseSignal;
-
 /*
  * do not forget to enter the waveform pointer addresses here
  */
-float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tri, &noise, &silence, &realNoise};
+float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tri, &noise, &silence};
 
 /*
  * pre selected waveforms
@@ -269,6 +265,7 @@ struct filterCoeffT mainFilt;
 static float filtCutoff = 1.0f;
 static float filtReso = 0.5f;
 static float soundFiltReso = 0.5f;
+static float soundNoiseLevel = 0.0f;
 
 /*
  * calculate coefficients of the 2nd order IIR filter
@@ -392,10 +389,9 @@ static uint32_t count = 0;
 //[[gnu::noinline, gnu::optimize ("fast-math")]]
 inline void Synth_Process(float *left, float *right)
 {
-#ifdef USE_UNISON
-    /* we need random for detuning to avoid producing bad sounds */
-    randomSeed(34547379);
-#endif
+
+    /* gerenate a noise signal */
+    float noise_signal = ((random(1024) / 512.0f) - 1.0f) * soundNoiseLevel;
 
     /*
      * generator simulation, rotate all wheels
@@ -419,23 +415,10 @@ inline void Synth_Process(float *left, float *right)
     {
         oscillatorT *osc = &oscPlayer[i];
         {
-#ifndef USE_UNISON
-            if (osc->waveForm != realNoise) /* this if reduces max poly to 10 */
-#endif
-            {
-                osc->samplePos += osc->addVal;
-                float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
-                osc->dest[0] += osc->pan_l * sig;
-                osc->dest[1] += osc->pan_r * sig;
-            }
-#ifndef USE_UNISON
-            else /* if a real noise should be used */
-            {
-                float nz = ((random(1024) / 512.0f) - 1.0f);
-                osc->dest[0] += osc->pan_l * nz;
-                osc->dest[1] += osc->pan_r * nz;
-            }
-#endif
+            osc->samplePos += osc->addVal;
+            float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
+            osc->dest[0] += osc->pan_l * sig;
+            osc->dest[1] += osc->pan_r * sig;
         }
     }
 
@@ -459,6 +442,10 @@ inline void Synth_Process(float *left, float *right)
                  */
                 (void)ADSR_Process(&adsr_fil, &voice->f_control_sign, &voice->f_phase);
             }
+
+            /* add some noise to the voice */
+            voice->lastSample[0] += noise_signal;
+            voice->lastSample[1] += noise_signal;
 
             voice->lastSample[0] *= voice->control_sign * voice->velocity;
             voice->lastSample[1] *= voice->control_sign * voice->velocity;
@@ -735,6 +722,11 @@ void Synth_SetRotary(uint8_t rotary, float value)
     case 7:
         soundFiltReso = 0.5f + 10 * value * value * value; /* min q is 0.5 here */
         Serial.printf("voice filter reso: %0.3f\n", soundFiltReso);
+        break;
+
+    case 8:
+        soundNoiseLevel = value;
+        Serial.printf("voice noise level: %0.3f\n", soundNoiseLevel);
         break;
 
     default:
