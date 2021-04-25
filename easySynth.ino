@@ -122,6 +122,11 @@ struct filterProcT
 struct filterCoeffT filterGlobalC;
 struct filterProcT mainFilterL, mainFilterR;
 
+float modulationDepth = 0.0f;
+float modulationSpeed = 5.0f;
+float modulationPitch = 1.0f;
+float pitchBendValue = 0.0f;
+float pitchMultiplier = 1.0f;
 
 struct oscillatorT
 {
@@ -383,13 +388,26 @@ void Voice_Off(uint32_t i)
     voc_act -= 1;
 }
 
+inline
+float SineNorm(float alpha_div2pi)
+{
+    uint32_t index = ((uint32_t)(alpha_div2pi * ((float)WAVEFORM_CNT))) % WAVEFORM_CNT;
+    return sine[index];
+}
+
+inline
+float GetModulation(void)
+{
+    float modSpeed = modulationSpeed;
+    return modulationDepth * modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f )));
+}
+
 static float out_l, out_r;
 static uint32_t count = 0;
 
 //[[gnu::noinline, gnu::optimize ("fast-math")]]
 inline void Synth_Process(float *left, float *right)
 {
-
     /* gerenate a noise signal */
     float noise_signal = ((random(1024) / 512.0f) - 1.0f) * soundNoiseLevel;
 
@@ -409,13 +427,23 @@ inline void Synth_Process(float *left, float *right)
     voiceSink[1] = 0;
 
     /*
+     * update pitch bending / modulation
+     */
+    if (count % 64 == 0)
+    {
+        float pitchVar = pitchBendValue + GetModulation();
+        static float lastPitchVar = 0;
+        pitchMultiplier = pow(2.0f, pitchVar / 12.0f);
+    }
+
+    /*
      * oscillator processing -> mix to voice
      */
     for (int i = 0; i < MAX_POLY_OSC; i++)
     {
         oscillatorT *osc = &oscPlayer[i];
         {
-            osc->samplePos += osc->addVal;
+            osc->samplePos += (uint32_t)( pitchMultiplier * ((float)osc->addVal));
             float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
             osc->dest[0] += osc->pan_l * sig;
             osc->dest[1] += osc->pan_r * sig;
@@ -667,6 +695,29 @@ inline void Synth_NoteOff(uint8_t note)
             voicePlayer[i].phase = release;
         }
     }
+}
+
+void Synth_ModulationWheel(uint8_t ch, float value)
+{
+    modulationDepth = value;
+}
+
+void Synth_ModulationSpeed(uint8_t ch, float value)
+{
+    modulationSpeed = value * 10;
+    //Status_ValueChangedFloat("ModulationSpeed", modulationSpeed);
+}
+
+void Synth_ModulationPitch(uint8_t ch, float value)
+{
+    modulationPitch = value * 5;
+    //Status_ValueChangedFloat("ModulationDepth", modulationPitch);
+}
+
+void Synth_PitchBend(uint8_t ch, float bend)
+{
+    pitchBendValue = bend;
+    Serial.printf("pitchBendValue: %0.3f\n", pitchBendValue);
 }
 
 void Synth_SetRotary(uint8_t rotary, float value)

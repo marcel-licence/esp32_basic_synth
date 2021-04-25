@@ -10,8 +10,12 @@
  * to convert the MIDI din signal to
  * a uart compatible signal
  */
+#ifdef ESP32_AUDIO_KIT
+#define RXD2 22 /* U2RRXD */
+#else
 #define RXD2 16 /* U2RRXD */
 #define TXD2 17
+#endif
 
 /* use define to dump midi data */
 //#define DUMP_SERIAL2_TO_SERIAL
@@ -34,6 +38,10 @@ inline void Midi_NoteOff(uint8_t note)
  */
 inline void Midi_ControlChange(uint8_t channel, uint8_t data1, uint8_t data2)
 {
+    if (data1 == 1)
+    {
+        Synth_ModulationWheel(channel, (float)data2 * NORM127MUL);
+    }
     if (data1 == 17)
     {
         if (channel < 10)
@@ -55,6 +63,12 @@ inline void Midi_ControlChange(uint8_t channel, uint8_t data1, uint8_t data2)
     {
         Synth_SetRotary(8,  data2 * NORM127MUL);
     }
+}
+
+inline void Midi_PitchBend(uint8_t ch, uint16_t bend)
+{
+    float value = ((float)bend - 8192.0f) * (1.0f / 8192.0f) - 1.0f;
+    Synth_PitchBend(ch, value);
 }
 
 /*
@@ -84,12 +98,20 @@ inline void HandleShortMsg(uint8_t *data)
     case 0xb0:
         Midi_ControlChange(ch, data[1], data[2]);
         break;
+    /* pitchbend */
+    case 0xe0:
+        Midi_PitchBend(ch, ((((uint16_t)data[1]) ) + ((uint16_t)data[2] << 8)));
+        break;
     }
 }
 
 void Midi_Setup()
 {
+#ifdef TXD2
     Serial2.begin(31250, SERIAL_8N1, RXD2, TXD2);
+#else
+    Serial2.begin(31250, SERIAL_8N1, RXD2);
+#endif
     pinMode(RXD2, INPUT_PULLUP);  /* 25: GPIO 16, u2_RXD */
 }
 
