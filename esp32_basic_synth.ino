@@ -10,25 +10,36 @@
  * required include files
  */
 #include <arduino.h>
-#include <driver/i2s.h>
 #include <WiFi.h>
 
+
+#define ESP32_AUDIO_KIT
+
+
+#ifdef ESP32_AUDIO_KIT
+/* on board led */
+#define LED_PIN 	19 // IO19 -> D5
+#else
+/* on board led */
+#define LED_PIN 	2
+
+/*
+ * Define and connect your PINS to DAC here
+ */
+#define I2S_BCLK_PIN	25
+#define I2S_WCLK_PIN	27
+#define I2S_DOUT_PIN	26
+#endif
 
 /*
  * You can modify the sample rate as you want
  */
+
+#ifdef ESP32_AUDIO_KIT
+#define SAMPLE_RATE	44100
+#else
 #define SAMPLE_RATE	48000
-
-
-/*
- * this is more an experiment required for other data formats
- */
-union sampleTUNT
-{
-    uint64_t sample;
-    int32_t ch[2];
-} sampleDataU;
-
+#endif
 
 void setup()
 {
@@ -41,9 +52,20 @@ void setup()
 
     Serial.println();
 
+    Delay_Init();
+
     Serial.printf("Initialize Synth Module\n");
     Synth_Init();
     Serial.printf("Initialize I2S Module\n");
+
+    // setup_reverb();
+
+    Blink_Setup();
+
+#ifdef ESP32_AUDIO_KIT
+    ac101_setup();
+#endif
+
     setup_i2s();
     Serial.printf("Initialize Midi Module\n");
     Midi_Setup();
@@ -59,6 +81,8 @@ void setup()
     btStop();
     // esp_wifi_deinit();
 #endif
+
+
 
     Serial.printf("ESP.getFreeHeap() %d\n", ESP.getFreeHeap());
     Serial.printf("ESP.getMinFreeHeap() %d\n", ESP.getMinFreeHeap());
@@ -79,7 +103,7 @@ void setup()
  */
 inline void Loop_1Hz(void)
 {
-
+    Blink_Process();
 }
 
 
@@ -88,6 +112,8 @@ inline void Loop_1Hz(void)
  * - all is done in a blocking context
  * - do not block the loop otherwise you will get problems with your audio
  */
+float fl_sample, fr_sample;
+
 void loop()
 {
     static uint32_t loop_cnt_1hz;
@@ -99,6 +125,7 @@ void loop()
     if (loop_cnt_1hz >= SAMPLE_RATE)
     {
         Loop_1Hz();
+        loop_cnt_1hz = 0;
     }
 
 #ifdef I2S_NODAC
@@ -107,14 +134,30 @@ void loop()
         l_sample = Synth_Process();
     }
 #else
+
+#ifdef ESP32_AUDIO_KIT
+    if (i2s_write_stereo_samples(&fl_sample, &fr_sample))
+    {
+        /* nothing for here */
+    }
+    Synth_Process(&fl_sample, &fr_sample);
+    /*
+     * process delay line
+     */
+    Delay_Process(&fl_sample, &fr_sample);
+#else
     if (i2s_write_sample_32ch2(sampleDataU.sample))  /* function returns always true / it blocks until samples are written to buffer */
     {
-        float fl_sample, fr_sample;
         Synth_Process(&fl_sample, &fr_sample);
-
+        /*
+         * process delay line
+         */
+        Delay_Process(&fl_sample, &fr_sample);
         sampleDataU.ch[0] = int32_t(fl_sample * 536870911.0f);
         sampleDataU.ch[1] = int32_t(fr_sample * 536870911.0f);
     }
+#endif
+
 #endif
 
     /*

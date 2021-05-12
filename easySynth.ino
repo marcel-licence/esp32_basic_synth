@@ -63,13 +63,13 @@ float *saw = NULL;
 float *square = NULL;
 float *pulse = NULL;
 float *tri = NULL;
-float *noise = NULL;
+float *crappy_noise = NULL;
 float *silence = NULL;
 
 /*
  * do not forget to enter the waveform pointer addresses here
  */
-float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tri, &noise, &silence};
+float *waveFormLookUp[WAVEFORM_TYPE_COUNT];
 
 /*
  * pre selected waveforms
@@ -79,11 +79,11 @@ float **waveFormLookUp[WAVEFORM_TYPE_COUNT] = {&sine, &saw, &square, &pulse, &tr
 #ifdef USE_UNISON
 static float detune = 0.1; /* detune parameter */
 static uint8_t unison = 0; /* additional osc per voice count */
-float **selectedWaveForm =  &saw;
-float **selectedWaveForm2 =  &saw;
+float *selectedWaveForm;
+float *selectedWaveForm2;
 #else
-float **selectedWaveForm =  &pulse;
-float **selectedWaveForm2 =  &silence;
+float *selectedWaveForm;
+float *selectedWaveForm2;
 #endif
 
 
@@ -130,7 +130,7 @@ float pitchMultiplier = 1.0f;
 
 struct oscillatorT
 {
-    float *waveForm;
+    float **waveForm;
     float *dest;
     uint32_t samplePos;
     uint32_t addVal;
@@ -185,10 +185,9 @@ void Synth_Init()
     square = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
     pulse = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
     tri = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
-    noise = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
+    crappy_noise = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
     silence = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
 
-    Delay_Init();
 
     /*
      * let us calculate some waveforms
@@ -203,9 +202,25 @@ void Synth_Init()
         square[i] = (i > (WAVEFORM_CNT / 2)) ? 1 : -1;
         pulse[i] = (i > (WAVEFORM_CNT / 4)) ? 1 : -1;
         tri[i] = ((i > (WAVEFORM_CNT / 2)) ? (((4.0f * (float)i) / ((float)WAVEFORM_CNT)) - 1.0f) : (3.0f - ((4.0f * (float)i) / ((float)WAVEFORM_CNT)))) - 2.0f;
-        noise[i] = (random(1024) / 512.0f) - 1.0f;
+        crappy_noise[i] = (random(1024) / 512.0f) - 1.0f;
         silence[i] = 0;
     }
+
+    waveFormLookUp[0] = sine;
+    waveFormLookUp[1] = saw;
+    waveFormLookUp[2] = square;
+    waveFormLookUp[3] = pulse;
+    waveFormLookUp[4] = tri;
+    waveFormLookUp[5] = crappy_noise;
+    waveFormLookUp[6] = silence;
+
+#ifdef USE_UNISON
+selectedWaveForm =  saw;
+selectedWaveForm2 =  saw;
+#else
+selectedWaveForm =  pulse;
+selectedWaveForm2 =  silence;
+#endif
 
     /*
      * initialize all oscillators
@@ -213,7 +228,7 @@ void Synth_Init()
     for (int i = 0; i < MAX_POLY_OSC; i++)
     {
         oscillatorT *osc = &oscPlayer[i];
-        osc->waveForm = silence;
+        osc->waveForm = &silence;
         osc->dest = voiceSink;
     }
 
@@ -444,7 +459,7 @@ inline void Synth_Process(float *left, float *right)
         oscillatorT *osc = &oscPlayer[i];
         {
             osc->samplePos += (uint32_t)( pitchMultiplier * ((float)osc->addVal));
-            float sig = osc->waveForm[WAVEFORM_I(osc->samplePos)];
+            float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
             osc->dest[0] += osc->pan_l * sig;
             osc->dest[1] += osc->pan_r * sig;
         }
@@ -500,10 +515,7 @@ inline void Synth_Process(float *left, float *right)
     Filter_Process(&out_l, &mainFilterL);
     Filter_Process(&out_r, &mainFilterR);
 
-    /*
-     * process delay line
-     */
-    Delay_Process(&out_l, &out_r);
+
 
     /*
      * reduce level a bit to avoid distortion
@@ -602,7 +614,7 @@ inline void Synth_NoteOn(uint8_t note)
         osc->addVal = midi_note_to_add[note];
     }
     osc->samplePos = 0;
-    osc->waveForm = *selectedWaveForm;
+    osc->waveForm = &selectedWaveForm;
     osc->dest = voice->lastSample;
     osc->pan_l = 1;
     osc->pan_r = 1;
@@ -628,7 +640,7 @@ inline void Synth_NoteOn(uint8_t note)
 
         osc->addVal = midi_note_to_add[note] + ((i + 1 - (unison * 0.5)) * midi_note_to_add50c[note] * detune / unison);
         osc->samplePos = (uint32_t)random(1 << 31); /* otherwise it sounds ... bad!? */
-        osc->waveForm = *selectedWaveForm2;
+        osc->waveForm = &selectedWaveForm2;
         osc->dest = voice->lastSample;
 
         /*
@@ -660,7 +672,7 @@ inline void Synth_NoteOn(uint8_t note)
         {
             osc->addVal = midi_note_to_add[note + 12];
             osc->samplePos = 0; /* we could add some offset maybe */
-            osc->waveForm = *selectedWaveForm2;
+            osc->waveForm = &selectedWaveForm2;
             osc->dest = voice->lastSample;
             osc->pan_l = 1;
             osc->pan_r = 1;

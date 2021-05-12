@@ -87,5 +87,5 @@ void Delay_SetLevel(float value)
 void Delay_SetLength(float value)
 {
     delayLen = (uint32_t)(((float)MAX_DELAY - 1.0f) * value);
-    Serial.printf("delay length: %0.3fms\n", delayLen * (1000.0f / 44100.0f));
+    Serial.printf("delay length: %0.3fms\n", delayLen * (1000.0f / ((float)SAMPLE_RATE)));
 }
