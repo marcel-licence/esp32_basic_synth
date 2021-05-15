@@ -50,9 +50,6 @@ static AC101 ac;
 //#define SAMPLE_SIZE_24BIT
 //#define SAMPLE_SIZE_32BIT
 
-#ifndef SAMPLE_RATE
-#define SAMPLE_RATE	44100
-#endif
 #define CHANNEL_COUNT	2
 #define WORD_SIZE	16
 #define I2S1CLK	(512*SAMPLE_RATE)

@@ -215,11 +215,11 @@ void Synth_Init()
     waveFormLookUp[6] = silence;
 
 #ifdef USE_UNISON
-selectedWaveForm =  saw;
-selectedWaveForm2 =  saw;
+    selectedWaveForm =  saw;
+    selectedWaveForm2 =  saw;
 #else
-selectedWaveForm =  pulse;
-selectedWaveForm2 =  silence;
+    selectedWaveForm =  pulse;
+    selectedWaveForm2 =  silence;
 #endif
 
     /*
@@ -561,7 +561,7 @@ inline void Filter_Reset(struct filterProcT *filter)
     filter->w[2] = 0.0f;
 }
 
-inline void Synth_NoteOn(uint8_t note)
+inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 {
     struct notePlayerT *voice = getFreeVoice();
     struct oscillatorT *osc = getFreeOsc();
@@ -698,7 +698,7 @@ inline void Synth_NoteOn(uint8_t note)
 
 }
 
-inline void Synth_NoteOff(uint8_t note)
+inline void Synth_NoteOff(uint8_t ch, uint8_t note)
 {
     for (int i = 0; i < MAX_POLY_VOICE ; i++)
     {

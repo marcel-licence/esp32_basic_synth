@@ -5,6 +5,7 @@
  * Author: Marcel Licence
  */
 
+#include "config.h"
 
 /*
  * required include files
@@ -12,34 +13,9 @@
 #include <arduino.h>
 #include <WiFi.h>
 
+/* this is used to add a task to core 0 */
+TaskHandle_t  Core0TaskHnd ;
 
-#define ESP32_AUDIO_KIT
-
-
-#ifdef ESP32_AUDIO_KIT
-/* on board led */
-#define LED_PIN 	19 // IO19 -> D5
-#else
-/* on board led */
-#define LED_PIN 	2
-
-/*
- * Define and connect your PINS to DAC here
- */
-#define I2S_BCLK_PIN	25
-#define I2S_WCLK_PIN	27
-#define I2S_DOUT_PIN	26
-#endif
-
-/*
- * You can modify the sample rate as you want
- */
-
-#ifdef ESP32_AUDIO_KIT
-#define SAMPLE_RATE	44100
-#else
-#define SAMPLE_RATE	48000
-#endif
 
 void setup()
 {
@@ -84,6 +60,7 @@ void setup()
 
 
 
+
     Serial.printf("ESP.getFreeHeap() %d\n", ESP.getFreeHeap());
     Serial.printf("ESP.getMinFreeHeap() %d\n", ESP.getMinFreeHeap());
     Serial.printf("ESP.getHeapSize() %d\n", ESP.getHeapSize());
@@ -92,10 +69,48 @@ void setup()
     Serial.printf("Firmware started successfully\n");
 
 #if 0 /* activate this line to get a tone on startup to test the DAC */
-    Synth_NoteOn(64);
+    Synth_NoteOn(0, 64, 1.0f);
+#endif
+
+#ifdef ADC_TO_MIDI_ENABLED
+    xTaskCreatePinnedToCore(Core0Task, "Core0Task", 8000, NULL, 999, &Core0TaskHnd, 0);
 #endif
 }
 
+
+void Core0TaskSetup()
+{
+    /*
+     * init your stuff for core0 here
+     */
+#ifdef ADC_TO_MIDI_ENABLED
+    AdcMul_Init();
+#endif
+}
+
+void Core0TaskLoop()
+{
+    /*
+     * put your loop stuff for core0 here
+     */
+#ifdef ADC_TO_MIDI_ENABLED
+    AdcMul_Process();
+#endif
+}
+
+void Core0Task(void *parameter)
+{
+    Core0TaskSetup();
+
+    while (true)
+    {
+        Core0TaskLoop();
+
+        /* this seems necessary to trigger the watchdog */
+        delay(1);
+        yield();
+    }
+}
 
 /*
  * use this if something should happen every second
