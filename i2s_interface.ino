@@ -16,11 +16,6 @@
 
 const i2s_port_t i2s_num = I2S_NUM_0; // i2s port number
 
-#ifdef ESP32_AUDIO_KIT
-#define SAMPLE_SIZE_16BIT
-#endif
-
-
 #ifdef I2S_NODAC
 
 bool writeDAC(float DAC_f);
@@ -108,17 +103,35 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
         int16_t ch[2];
     } sampleDataU;
 #endif
+#ifdef SAMPLE_SIZE_32BIT
+    static union sampleTUNT
+    {
+        uint64_t sample;
+        int32_t ch[2];
+    } sampleDataU;
+#endif
 
     /*
      * using RIGHT_LEFT format
      */
-    sampleDataU.ch[0] = int16_t(*fr_sample * 16383.0f);
+#ifdef SAMPLE_SIZE_16BIT
+    sampleDataU.ch[0] = int16_t(*fr_sample * 16383.0f); /* some bits missing here */
     sampleDataU.ch[1] = int16_t(*fl_sample * 16383.0f);
+#endif
+#ifdef SAMPLE_SIZE_32BIT
+    sampleDataU.ch[0] = int32_t(*fr_sample * 1073741823.0f); /* some bits missing here */
+    sampleDataU.ch[1] = int32_t(*fl_sample * 1073741823.0f);
+#endif
 
     static size_t bytes_written = 0;
     static size_t bytes_read = 0;
 
+#ifdef SAMPLE_SIZE_16BIT
     i2s_write(i2s_num, (const char *)&sampleDataU.sample, 4, &bytes_written, portMAX_DELAY);
+#endif
+#ifdef SAMPLE_SIZE_32BIT
+    i2s_write(i2s_num, (const char *)&sampleDataU.sample, 8, &bytes_written, portMAX_DELAY);
+#endif
 
     if (bytes_written > 0)
     {
@@ -147,9 +160,10 @@ i2s_config_t i2s_config =
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
     .communication_format = (i2s_comm_format_t)I2S_COMM_FORMAT_I2S_MSB,
 #else
-#ifdef ESP32_AUDIO_KIT
+#ifdef SAMPLE_SIZE_16BIT
     .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-#else
+#endif
+#ifdef SAMPLE_SIZE_32BIT
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
 #endif
     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,

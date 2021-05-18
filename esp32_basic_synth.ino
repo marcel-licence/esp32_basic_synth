@@ -150,7 +150,6 @@ void loop()
     }
 #else
 
-#ifdef ESP32_AUDIO_KIT
     if (i2s_write_stereo_samples(&fl_sample, &fr_sample))
     {
         /* nothing for here */
@@ -160,18 +159,6 @@ void loop()
      * process delay line
      */
     Delay_Process(&fl_sample, &fr_sample);
-#else
-    if (i2s_write_sample_32ch2(sampleDataU.sample))  /* function returns always true / it blocks until samples are written to buffer */
-    {
-        Synth_Process(&fl_sample, &fr_sample);
-        /*
-         * process delay line
-         */
-        Delay_Process(&fl_sample, &fr_sample);
-        sampleDataU.ch[0] = int32_t(fl_sample * 536870911.0f);
-        sampleDataU.ch[1] = int32_t(fr_sample * 536870911.0f);
-    }
-#endif
 
 #endif
 

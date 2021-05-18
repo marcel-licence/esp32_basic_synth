@@ -4,6 +4,7 @@
  * Author: Marcel Licence
  */
 
+#ifdef ESP32_AUDIO_KIT
 
 /*
  * Instructions: http://myosuploads3.banggood.com/products/20210306/20210306011116instruction.pdf
@@ -46,7 +47,7 @@
 static AC101 ac;
 
 /* actually only supporting 16 bit */
-#define SAMPLE_SIZE_16BIT
+//#define SAMPLE_SIZE_16BIT
 //#define SAMPLE_SIZE_24BIT
 //#define SAMPLE_SIZE_32BIT
 
@@ -171,3 +172,5 @@ void button_loop()
     }
 #endif
 }
+
+#endif

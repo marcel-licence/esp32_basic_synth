@@ -35,8 +35,10 @@
 
 #ifdef ESP32_AUDIO_KIT
 #define SAMPLE_RATE	44100
+#define SAMPLE_SIZE_16BIT
 #else
 #define SAMPLE_RATE	48000
+#define SAMPLE_SIZE_32BIT
 #endif
 
 #define ADC_TO_MIDI_ENABLED
