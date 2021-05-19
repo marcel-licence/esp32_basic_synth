@@ -19,6 +19,30 @@
 
 
 /*
+ * Param indices for Synth_SetParam function
+ */
+#define SYNTH_PARAM_VEL_ENV_ATTACK	0
+#define SYNTH_PARAM_VEL_ENV_DECAY	1
+#define SYNTH_PARAM_VEL_ENV_SUSTAIN	2
+#define SYNTH_PARAM_VEL_ENV_RELEASE	3
+#define SYNTH_PARAM_FIL_ENV_ATTACK	4
+#define SYNTH_PARAM_FIL_ENV_DECAY	5
+#define SYNTH_PARAM_FIL_ENV_SUSTAIN	6
+#define SYNTH_PARAM_FIL_ENV_RELEASE	7
+#ifdef USE_UNISON
+#define SYNTH_PARAM_DETUNE_1		8
+#define SYNTH_PARAM_UNISON_2		9
+#else
+#define SYNTH_PARAM_WAVEFORM_1		8
+#define SYNTH_PARAM_WAVEFORM_2		9
+#endif
+#define SYNTH_PARAM_MAIN_FILT_CUTOFF	10
+#define SYNTH_PARAM_MAIN_FILT_RESO		11
+#define SYNTH_PARAM_VOICE_FILT_RESO		12
+#define SYNTH_PARAM_VOICE_NOISE_LEVEL	13
+
+
+/*
  * Following defines can be changed for different puprposes
  */
 #ifdef USE_UNISON
@@ -732,93 +756,28 @@ void Synth_PitchBend(uint8_t ch, float bend)
     Serial.printf("pitchBendValue: %0.3f\n", pitchBendValue);
 }
 
-void Synth_SetRotary(uint8_t rotary, float value)
-{
-    switch (rotary)
-    {
-#ifdef USE_UNISON
-    case 0:
-        detune = value;
-        Serial.printf("detune: %0.3f cent\n", detune * 50);
-        break;
-    case 1:
-        unison = (uint8_t)(MAX_DETUNE * value);
-        Serial.printf("unison: 1 + %d\n", unison);
-        break;
-#else
-    case 0:
-        {
-            uint8_t selWaveForm = (value) * (WAVEFORM_TYPE_COUNT);
-            selectedWaveForm = waveFormLookUp[selWaveForm];
-            Serial.printf("selWaveForm: %d\n", selWaveForm);
-        }
-        break;
-    case 1:
-        {
-            uint8_t selWaveForm = (value) * (WAVEFORM_TYPE_COUNT);
-            selectedWaveForm2 = waveFormLookUp[selWaveForm];
-            Serial.printf("selWaveForm2: %d\n", selWaveForm);
-        }
-#endif
-        break;
-    case 2:
-        Delay_SetLength(value);
-        break;
-    case 3:
-        Delay_SetLevel(value);
-        break;
-    case 4:
-        Delay_SetFeedback(value);
-        break;
-
-    case 5:
-        filtCutoff = value;
-        Serial.printf("main filter cutoff: %0.3f\n", filtCutoff);
-        Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
-        break;
-    case 6:
-        filtReso =  0.5f + 10 * value * value * value; /* min q is 0.5 here */
-        Serial.printf("main filter reso: %0.3f\n", filtReso);
-        Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
-        break;
-
-    case 7:
-        soundFiltReso = 0.5f + 10 * value * value * value; /* min q is 0.5 here */
-        Serial.printf("voice filter reso: %0.3f\n", soundFiltReso);
-        break;
-
-    case 8:
-        soundNoiseLevel = value;
-        Serial.printf("voice noise level: %0.3f\n", soundNoiseLevel);
-        break;
-
-    default:
-        break;
-    }
-}
-
-void Synth_SetSlider(uint8_t slider, float value)
+void Synth_SetParam(uint8_t slider, float value)
 {
     switch (slider)
     {
-    case 0:
+    case SYNTH_PARAM_VEL_ENV_ATTACK:
         adsr_vol.a = (0.00005 * pow(5000, 1.0f - value));
         Serial.printf("voice volume attack: %0.6f\n", adsr_vol.a);
         break;
-    case 1:
+    case SYNTH_PARAM_VEL_ENV_DECAY:
         adsr_vol.d = (0.00005 * pow(5000, 1.0f - value));
         Serial.printf("voice volume decay: %0.6f\n", adsr_vol.d);
         break;
-    case 2:
+    case SYNTH_PARAM_VEL_ENV_SUSTAIN:
         adsr_vol.s = (0.01 * pow(100, value));
         Serial.printf("voice volume sustain: %0.6f\n", adsr_vol.s);
         break;
-    case 3:
+    case SYNTH_PARAM_VEL_ENV_RELEASE:
         adsr_vol.r = (0.0001 * pow(100, 1.0f - value));
         Serial.printf("voice volume release: %0.6f\n", adsr_vol.r);
         break;
 
-    case 4:
+    case SYNTH_PARAM_FIL_ENV_ATTACK:
 #if 0
         adsr_fil.a = (0.00005 * pow(5000, 1.0f - value));
 #else
@@ -826,17 +785,63 @@ void Synth_SetSlider(uint8_t slider, float value)
 #endif
         Serial.printf("voice filter attack: %0.6f\n", adsr_fil.a);
         break;
-    case 5:
+    case SYNTH_PARAM_FIL_ENV_DECAY:
         adsr_fil.d = (0.00005 * pow(5000, 1.0f - value));
         Serial.printf("voice filter decay: %0.6f\n", adsr_fil.d);
         break;
-    case 6:
+    case SYNTH_PARAM_FIL_ENV_SUSTAIN:
         adsr_fil.s = value;
         Serial.printf("voice filter sustain: %0.6f\n", adsr_fil.s);
         break;
-    case 7:
+    case SYNTH_PARAM_FIL_ENV_RELEASE:
         adsr_fil.r = (0.0001 * pow(100, 1.0f - value));
         Serial.printf("voice filter release: %0.6f\n", adsr_fil.r);
+        break;
+
+#ifdef USE_UNISON
+    case SYNTH_PARAM_DETUNE_1:
+        detune = value;
+        Serial.printf("detune: %0.3f cent\n", detune * 50);
+        break;
+    case SYNTH_PARAM_UNISON_2:
+        unison = (uint8_t)(MAX_DETUNE * value);
+        Serial.printf("unison: 1 + %d\n", unison);
+        break;
+#else
+    case SYNTH_PARAM_WAVEFORM_1:
+        {
+            uint8_t selWaveForm = (value) * (WAVEFORM_TYPE_COUNT);
+            selectedWaveForm = waveFormLookUp[selWaveForm];
+            Serial.printf("selWaveForm: %d\n", selWaveForm);
+        }
+        break;
+    case SYNTH_PARAM_WAVEFORM_2:
+        {
+            uint8_t selWaveForm = (value) * (WAVEFORM_TYPE_COUNT);
+            selectedWaveForm2 = waveFormLookUp[selWaveForm];
+            Serial.printf("selWaveForm2: %d\n", selWaveForm);
+        }
+        break;
+#endif
+    case SYNTH_PARAM_MAIN_FILT_CUTOFF:
+        filtCutoff = value;
+        Serial.printf("main filter cutoff: %0.3f\n", filtCutoff);
+        Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
+        break;
+    case SYNTH_PARAM_MAIN_FILT_RESO:
+        filtReso =  0.5f + 10 * value * value * value; /* min q is 0.5 here */
+        Serial.printf("main filter reso: %0.3f\n", filtReso);
+        Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
+        break;
+
+    case SYNTH_PARAM_VOICE_FILT_RESO:
+        soundFiltReso = 0.5f + 10 * value * value * value; /* min q is 0.5 here */
+        Serial.printf("voice filter reso: %0.3f\n", soundFiltReso);
+        break;
+
+    case SYNTH_PARAM_VOICE_NOISE_LEVEL:
+        soundNoiseLevel = value;
+        Serial.printf("voice noise level: %0.3f\n", soundNoiseLevel);
         break;
 
     default:

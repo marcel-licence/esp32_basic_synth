@@ -72,19 +72,19 @@ void Delay_Process(float *signal_l, float *signal_r)
     }
 }
 
-void Delay_SetFeedback(float value)
+void Delay_SetFeedback(uint8_t unused, float value)
 {
     delayFeedback = value;
     Serial.printf("delay feedback: %0.3f\n", value);
 }
 
-void Delay_SetLevel(float value)
+void Delay_SetLevel(uint8_t unused, float value)
 {
     delayToMix = value;
     Serial.printf("delay level: %0.3f\n", value);
 }
 
-void Delay_SetLength(float value)
+void Delay_SetLength(uint8_t unused, float value)
 {
     delayLen = (uint32_t)(((float)MAX_DELAY - 1.0f) * value);
     Serial.printf("delay length: %0.3fms\n", delayLen * (1000.0f / ((float)SAMPLE_RATE)));
