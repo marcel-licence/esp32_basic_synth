@@ -19,22 +19,10 @@ struct adc_to_midi_s
 extern struct adc_to_midi_s adcToMidiLookUp[]; /* definition in z_config.ino */
 
 uint8_t lastSendVal[ADC_TO_MIDI_LOOKUP_SIZE];  /* define ADC_TO_MIDI_LOOKUP_SIZE in top level file */
-
-#define ADC_INPUTS	8
 #define ADC_INVERT
-#define ADC_THRESHOLD		(1.0f/200.0f)
-#define ADC_OVERSAMPLING	2048
+#define ADC_THRESHOLD       (1.0f/200.0f)
+#define ADC_OVERSAMPLING    2048
 
-#define ADC_MUL_S0_PIN	23
-#if ADC_INPUTS > 2
-#define ADC_MUL_S1_PIN	18
-#endif
-#if ADC_INPUTS > 4
-#define ADC_MUL_S2_PIN	14
-#endif
-#if ADC_INPUTS > 8
-#define ADC_MUL_S3_PIN	5	 /* this has not been tested */
-#endif
 
 //#define ADC_DYNAMIC_RANGE
 //#define ADC_DEBUG_CHANNEL0_DATA
@@ -56,7 +44,7 @@ void AdcMul_Init(void)
     analogSetCycles(1);
     analogSetClockDiv(1);
 
-    adcAttachPin(12);
+    adcAttachPin(ADC_MUL_SIG_PIN);
 
     pinMode(ADC_MUL_S0_PIN, OUTPUT);
 #if ADC_INPUTS > 2
@@ -93,17 +81,17 @@ void AdcMul_Process(void)
         delay(1);
 
         readAccu = 0;
-        adcStart(12);
+        adcStart(ADC_MUL_SIG_PIN);
         for (int i = 0 ; i < ADC_OVERSAMPLING; i++)
         {
 
-            if (adcBusy(12) == false)
+            if (adcBusy(ADC_MUL_SIG_PIN) == false)
             {
-                readAccu += adcEnd(12);
-                adcStart(12);
+                readAccu += adcEnd(ADC_MUL_SIG_PIN);
+                adcStart(ADC_MUL_SIG_PIN);
             }
         }
-        adcEnd(12);
+        adcEnd(ADC_MUL_SIG_PIN);
 
 #ifdef ADC_DYNAMIC_RANGE
         if (readAccu < adcMin - 0.5f)

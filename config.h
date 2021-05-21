@@ -15,33 +15,50 @@
 #define ESP32_AUDIO_KIT
 
 #ifdef ESP32_AUDIO_KIT
+
 /* on board led */
-#define LED_PIN 	19 // IO19 -> D5
-#else
+#define LED_PIN     19 // IO19 -> D5
+
+#define ADC_INPUTS  8
+#define ADC_MUL_S0_PIN  23
+#define ADC_MUL_S1_PIN  18
+#define ADC_MUL_S2_PIN  14
+#define ADC_MUL_S3_PIN  5    /* <- not used, this has not been tested */
+#define ADC_MUL_SIG_PIN 12
+
+#else /* ESP32_AUDIO_KIT */
+
 /* on board led */
-#define LED_PIN 	2
+#define LED_PIN     2
 
 /*
  * Define and connect your PINS to DAC here
  */
-#define I2S_BCLK_PIN	25
-#define I2S_WCLK_PIN	27
-#define I2S_DOUT_PIN	26
-#endif
+#define I2S_BCLK_PIN    25
+#define I2S_WCLK_PIN    27
+#define I2S_DOUT_PIN    26
+
+#define ADC_INPUTS  8
+#define ADC_MUL_S0_PIN  33
+#define ADC_MUL_S1_PIN  32
+#define ADC_MUL_S2_PIN  13
+#define ADC_MUL_SIG_PIN 12
+
+#endif /* ESP32_AUDIO_KIT */
 
 /*
  * You can modify the sample rate as you want
  */
 
 #ifdef ESP32_AUDIO_KIT
-#define SAMPLE_RATE	44100
+#define SAMPLE_RATE 44100
 #define SAMPLE_SIZE_16BIT
 #else
-#define SAMPLE_RATE	48000
+#define SAMPLE_RATE 48000
 #define SAMPLE_SIZE_32BIT
 #endif
 
-#define ADC_TO_MIDI_ENABLED
-#define ADC_TO_MIDI_LOOKUP_SIZE	8
+#define ADC_TO_MIDI_ENABLED /* this will enable the adc module */
+#define ADC_TO_MIDI_LOOKUP_SIZE 8 /* should match ADC_INPUTS */
 
 #endif /* CONFIG_H_ */

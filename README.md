@@ -6,7 +6,7 @@ The project can be seen in my video https://www.youtube.com/watch?v=5XVK5MOKmZw
 ---
 The project has been tested on 
 - ESP32 Audio Kit V2.2 (using ESP32-A1S)
-- ESP32 DEVKIT - DOIT
+- ESP32 DEVKIT - DOIT (actually only supporting esp32\1.0.4 library)
 
 # ESP32 Audio Kit V2.2
 To compile set board to: ESP32 Dev Module
@@ -32,6 +32,14 @@ An external audio DAC is recommended for this setup:
 - BCLK -> IO25
 - WLCK -> IO27
 - DOUT -> IO26
+
+Connection of the ADC multplexer:
+- EN -> Ground
+- S0 -> IO33
+- S1 -> IO32
+- S2 -> IO13
+- S3 -> Ground
+- Sig -> IO12
 
 # ADC Mapping
 The adc module has been only tested with the ESP32 Audio Kit V2.2.
