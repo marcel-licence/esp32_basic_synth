@@ -39,9 +39,9 @@ bool i2s_write_sample(uint32_t sample)
 static uint32_t i2sACC;
 static uint16_t err;
 
-bool writeDAC(float DAC_f)
+bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
 {
-    uint16_t DAC = 0x8000 + int16_t(DAC_f * 32767.0f);
+    uint16_t DAC = 0x8000 + int16_t(*fl_sample * 32767.0f);
     for (uint8_t i = 0; i < 32; i++)
     {
         i2sACC = i2sACC << 1;
@@ -181,7 +181,7 @@ i2s_pin_config_t pins =
 {
     .bck_io_num = I2S_PIN_NO_CHANGE,
     .ws_io_num =  I2S_PIN_NO_CHANGE,
-    .data_out_num = 22,
+    .data_out_num = I2S_NODAC_OUT_PIN,
     .data_in_num = I2S_PIN_NO_CHANGE
 };
 #else

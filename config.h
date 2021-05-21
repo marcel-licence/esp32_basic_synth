@@ -34,9 +34,17 @@
 /*
  * Define and connect your PINS to DAC here
  */
+
+#ifdef I2S_NODAC
+#define I2S_NODAC_OUT_PIN   22  /* noisy sound without DAC, add capacitor in series! */
+#else
+/*
+ * pins to connect a real DAC like PCM5201
+ */
 #define I2S_BCLK_PIN    25
 #define I2S_WCLK_PIN    27
 #define I2S_DOUT_PIN    26
+#endif
 
 #define ADC_INPUTS  8
 #define ADC_MUL_S0_PIN  33

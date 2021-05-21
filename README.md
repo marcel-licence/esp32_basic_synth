@@ -28,11 +28,19 @@ Ensure that "#define ESP32_AUDIO_KIT" has been removed from config.h
 
 ADC has not been tested with this configuration (please remove #define ADC_TO_MIDI_ENABLED)
 
+## Using a DAC
 An external audio DAC is recommended for this setup:
 - BCLK -> IO25
 - WLCK -> IO27
 - DOUT -> IO26
 
+## Using no DAC
+You can also get a sound without a DAC. 
+Add '#define I2S_NODAC' to config.h
+
+The default output pin is IO22. Add a capacitor in series of the audio line (10µF for example)
+
+## Using an ADC mulitplexer
 Connection of the ADC multplexer:
 - EN -> Ground
 - S0 -> IO33
@@ -41,7 +49,7 @@ Connection of the ADC multplexer:
 - S3 -> Ground
 - Sig -> IO12
 
-# ADC Mapping
+### ADC Mapping
 The adc module has been only tested with the ESP32 Audio Kit V2.2.
 In z_config.ino you can define your own mapping. Actually only 8 channels are read from the multiplexer.
 The adc lookup is used to define a channel and cc per analog input (C0..C7).
