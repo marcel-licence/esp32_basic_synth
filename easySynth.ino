@@ -544,8 +544,8 @@ inline void Synth_Process(float *left, float *right)
     /*
      * reduce level a bit to avoid distortion
      */
-    out_l *= 0.4f;
-    out_r *= 0.4f;
+    out_l *= 0.4f * 0.25f;
+    out_r *= 0.4f * 0.25f;
 
     /*
      * finally output our samples
@@ -600,7 +600,11 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     }
 
     voice->midiNote = note;
-    voice->velocity = 0.25; /* just something to test */
+#ifdef MIDI_USE_CONST_VELOCITY
+    voice->velocity = 1.0f;
+#else
+    voice->velocity = vel;
+#endif
     voice->lastSample[0] = 0.0f;
     voice->lastSample[1] = 0.0f;
     voice->control_sign = 0.0f;

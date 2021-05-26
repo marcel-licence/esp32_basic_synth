@@ -14,6 +14,9 @@
 
 #define ESP32_AUDIO_KIT
 
+/* this will force using const velocity for all notes, remove this to get dynamic velocity */
+#define MIDI_USE_CONST_VELOCITY
+
 #ifdef ESP32_AUDIO_KIT
 
 /* on board led */
