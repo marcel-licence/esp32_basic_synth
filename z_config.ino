@@ -103,10 +103,30 @@ struct midiControllerMapping edirolMapping[] =
 
 struct midiMapping_s midiMapping =
 {
+    NULL,
     Synth_NoteOn,
     Synth_NoteOff,
     Synth_PitchBend,
     Synth_ModulationWheel,
     edirolMapping,
     sizeof(edirolMapping) / sizeof(edirolMapping[0]),
+};
+
+struct usbMidiMappingEntry_s usbMidiMappingEntries[] =
+{
+    {
+        NULL,
+        App_UsbMidiShortMsgReceived,
+        NULL,
+        NULL,
+        0xFF,
+    },
+};
+
+struct usbMidiMapping_s usbMidiMapping =
+{
+    NULL,
+    NULL,
+    usbMidiMappingEntries,
+    sizeof(usbMidiMappingEntries) / sizeof(usbMidiMappingEntries[0]),
 };

@@ -14,7 +14,7 @@
 
 
 
-const i2s_port_t i2s_num = I2S_NUM_0; // i2s port number
+const i2s_port_t i2s_port_number = I2S_NUM_0;
 
 #ifdef I2S_NODAC
 
@@ -24,7 +24,7 @@ bool i2s_write_sample(uint32_t sample);
 bool i2s_write_sample(uint32_t sample)
 {
     static size_t bytes_written = 0;
-    i2s_write((i2s_port_t)i2s_num, (const char *)&sample, 4, &bytes_written, portMAX_DELAY);
+    i2s_write(i2s_port_number, (const char *)&sample, 4, &bytes_written, portMAX_DELAY);
 
     if (bytes_written > 0)
     {
@@ -65,7 +65,7 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
 bool i2s_write_sample_32ch2(uint64_t sample)
 {
     static size_t bytes_written = 0;
-    i2s_write((i2s_port_t)i2s_num, (const char *)&sample, 8, &bytes_written, portMAX_DELAY);
+    i2s_write(i2s_port_number, (const char *)&sample, 8, &bytes_written, portMAX_DELAY);
 
     if (bytes_written > 0)
     {
@@ -127,10 +127,10 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
     static size_t bytes_read = 0;
 
 #ifdef SAMPLE_SIZE_16BIT
-    i2s_write(i2s_num, (const char *)&sampleDataU.sample, 4, &bytes_written, portMAX_DELAY);
+    i2s_write(i2s_port_number, (const char *)&sampleDataU.sample, 4, &bytes_written, portMAX_DELAY);
 #endif
 #ifdef SAMPLE_SIZE_32BIT
-    i2s_write(i2s_num, (const char *)&sampleDataU.sample, 8, &bytes_written, portMAX_DELAY);
+    i2s_write(i2s_port_number, (const char *)&sampleDataU.sample, 8, &bytes_written, portMAX_DELAY);
 #endif
 
     if (bytes_written > 0)
@@ -151,9 +151,9 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
  * i2s configuration
  */
 
-i2s_config_t i2s_config =
+i2s_config_t i2s_configuration =
 {
-    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX ),
+    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
     .sample_rate = SAMPLE_RATE,
 #ifdef I2S_NODAC
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
@@ -204,8 +204,8 @@ i2s_pin_config_t pins =
 
 void setup_i2s()
 {
-    i2s_driver_install(i2s_num, &i2s_config, 0, NULL);
+    i2s_driver_install(i2s_port_number, &i2s_configuration, 0, NULL);
     i2s_set_pin(I2S_NUM_0, &pins);
-    i2s_set_sample_rates(i2s_num, SAMPLE_RATE);
-    i2s_start(i2s_num);
+    i2s_set_sample_rates(i2s_port_number, SAMPLE_RATE);
+    i2s_start(i2s_port_number);
 }

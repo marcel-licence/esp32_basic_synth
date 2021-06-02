@@ -12,10 +12,16 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define ESP32_AUDIO_KIT
+//#define ESP32_AUDIO_KIT
 
 /* this will force using const velocity for all notes, remove this to get dynamic velocity */
 #define MIDI_USE_CONST_VELOCITY
+
+/* you can receive MIDI messages via serial-USB connection */
+#define MIDI_RECV_FROM_SERIAL
+
+/* activate MIDI via USB */
+//#define MIDI_VIA_USB_ENABLED
 
 #ifdef ESP32_AUDIO_KIT
 
@@ -56,6 +62,17 @@
 #define ADC_MUL_SIG_PIN 12
 
 #endif /* ESP32_AUDIO_KIT */
+
+/*
+ * DIN MIDI Pinout
+ */
+#ifdef ESP32_AUDIO_KIT
+#define RXD2 22 /* U2RRXD */
+#else
+#define RXD2 16 /* U2RRXD */
+#define TXD2 17
+#endif
+
 
 /*
  * You can modify the sample rate as you want
