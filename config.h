@@ -18,6 +18,10 @@
 #define MIDI_USE_CONST_VELOCITY
 
 /* you can receive MIDI messages via serial-USB connection */
+/*
+ * you could use for example https://projectgus.github.io/hairless-midiserial/
+ * to connect your MIDI device via computer to the serial port
+ */
 #define MIDI_RECV_FROM_SERIAL
 
 /* activate MIDI via USB */

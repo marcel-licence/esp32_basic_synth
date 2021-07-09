@@ -13,6 +13,7 @@
  * Please check out USB-MIDI dump utility from Yuuichi Akagawa
  */
 
+#ifdef MIDI_VIA_USB_ENABLED
 /*
  * Connections:
  *  CS: IO5
@@ -293,3 +294,4 @@ void UsbMidi_SendControlChange(uint8_t channel, uint8_t data1, uint8_t data2)
     Serial2.write(shortBuf, 3);
 }
 
+#endif /* MIDI_VIA_USB_ENABLED */

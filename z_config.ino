@@ -112,6 +112,7 @@ struct midiMapping_s midiMapping =
     sizeof(edirolMapping) / sizeof(edirolMapping[0]),
 };
 
+#ifdef MIDI_VIA_USB_ENABLED
 struct usbMidiMappingEntry_s usbMidiMappingEntries[] =
 {
     {
@@ -130,3 +131,4 @@ struct usbMidiMapping_s usbMidiMapping =
     usbMidiMappingEntries,
     sizeof(usbMidiMappingEntries) / sizeof(usbMidiMappingEntries[0]),
 };
+#endif /* MIDI_VIA_USB_ENABLED */
