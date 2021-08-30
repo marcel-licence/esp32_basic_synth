@@ -44,11 +44,19 @@ void setup()
     Blink_Setup();
 
 #ifdef ESP32_AUDIO_KIT
+#ifdef ES8388_ENABLED
+    ES8388_Setup();
+#else
     ac101_setup();
+#endif
 #endif
 
     setup_i2s();
     Serial.printf("Initialize Midi Module\n");
+
+    /*
+     * setup midi module / rx port
+     */
     Midi_Setup();
 
     Serial.printf("Turn off Wifi/Bluetooth\n");
@@ -96,7 +104,9 @@ void Core0TaskSetup()
 #endif
 }
 
+#ifdef ADC_TO_MIDI_ENABLED
 static uint8_t adc_prescaler = 0;
+#endif
 
 void Core0TaskLoop()
 {
@@ -107,13 +117,12 @@ void Core0TaskLoop()
 #ifdef MIDI_VIA_USB_ENABLED
     adc_prescaler++;
     if (adc_prescaler > 15) /* use prescaler when USB is active because it is very time consuming */
-#endif
+#endif /* MIDI_VIA_USB_ENABLED */
     {
         adc_prescaler = 0;
         AdcMul_Process();
     }
-
-#endif
+#endif /* ADC_TO_MIDI_ENABLED */
 #ifdef MIDI_VIA_USB_ENABLED
     UsbMidi_Loop();
 #endif

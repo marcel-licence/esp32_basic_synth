@@ -75,5 +75,7 @@ Using USB can be seen here: https://youtu.be/Mt3rT-SVZww
 ---
 If you have questions or ideas please feel free to use the discussion area!
 
+Derived projects 
 ---
 
+MichaelPNolan added a phyicial interface, knobs etc. to make it standalone: https://github.com/MichaelPNolan/StandAloneSynth37key/tree/main/esp32_alone_synth

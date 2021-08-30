@@ -9,9 +9,14 @@
  *      Author: Marcel Licence
  */
 
+#ifdef AUDIO_KIT_BUTTON_ANALOG
+audioKitButtonCb audioKitButtonCallback = App_ButtonCb;
+#endif
+
 /*
  * adc to midi mapping
  */
+#ifdef ADC_TO_MIDI_ENABLED
 struct adc_to_midi_s adcToMidiLookUp[ADC_TO_MIDI_LOOKUP_SIZE] =
 {
     {0, 0x10},
@@ -23,6 +28,7 @@ struct adc_to_midi_s adcToMidiLookUp[ADC_TO_MIDI_LOOKUP_SIZE] =
     {6, 0x10},
     {7, 0x10},
 };
+#endif
 
 /*
  * this mapping is used for the edirol pcr-800

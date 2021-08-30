@@ -4,12 +4,19 @@
  * Author: Marcel Licence
  */
 
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
+
 /*
  * look for midi interface using 1N136
  * to convert the MIDI din signal to
  * a uart compatible signal
  */
 
+#ifndef MIDI_SERIAL2_BAUDRATE
+#define MIDI_SERIAL2_BAUDRATE   31250
+#endif
 
 /* use define to dump midi data */
 //#define DUMP_SERIAL2_TO_SERIAL
@@ -141,12 +148,14 @@ inline void Midi_HandleShortMsg(uint8_t *data, uint8_t cable)
 
 void Midi_Setup()
 {
+#ifdef MIDI_RX_PIN
 #ifdef TXD2
-    Serial2.begin(31250, SERIAL_8N1, RXD2, TXD2);
+    Serial2.begin(MIDI_SERIAL2_BAUDRATE, SERIAL_8N1, MIDI_RX_PIN, TXD2);
 #else
-    Serial2.begin(31250, SERIAL_8N1, RXD2);
+    Serial2.begin(MIDI_SERIAL2_BAUDRATE, SERIAL_8N1, MIDI_RX_PIN);
 #endif
-    pinMode(RXD2, INPUT_PULLUP);  /* 25: GPIO 16, u2_RXD */
+    pinMode(MIDI_RX_PIN, INPUT_PULLUP); /* can be connected to open collector output */
+#endif
 }
 
 void Midi_CheckSerial2(void)
@@ -211,6 +220,7 @@ void Midi_CheckSerial2(void)
     }
 }
 
+inline
 void Midi_CheckSerial(void)
 {
     /*
@@ -275,9 +285,12 @@ void Midi_CheckSerial(void)
 /*
  * this function should be called continuously to ensure that incoming messages can be processed
  */
+inline
 void Midi_Process()
 {
+#ifdef MIDI_RX_PIN
     Midi_CheckSerial2();
+#endif
 #ifdef MIDI_RECV_FROM_SERIAL
     Midi_CheckSerial();
 #endif

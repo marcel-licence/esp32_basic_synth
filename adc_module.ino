@@ -10,6 +10,8 @@
  * Reference: https://youtu.be/l8GrNxElRkc
  */
 
+#ifdef ADC_TO_MIDI_ENABLED
+
 struct adc_to_midi_s
 {
     uint8_t ch;
@@ -40,8 +42,9 @@ void AdcMul_Init(void)
 
     analogReadResolution(10);
     analogSetAttenuation(ADC_11db);
-
+#if 0
     analogSetCycles(1);
+#endif
     analogSetClockDiv(1);
 
     adcAttachPin(ADC_MUL_SIG_PIN);
@@ -81,6 +84,7 @@ void AdcMul_Process(void)
         delay(1);
 
         readAccu = 0;
+#if 0
         adcStart(ADC_MUL_SIG_PIN);
         for (int i = 0 ; i < ADC_OVERSAMPLING; i++)
         {
@@ -92,6 +96,12 @@ void AdcMul_Process(void)
             }
         }
         adcEnd(ADC_MUL_SIG_PIN);
+#else
+        for (int i = 0 ; i < ADC_OVERSAMPLING; i++)
+        {
+            readAccu += analogRead(ADC_MUL_SIG_PIN);
+        }
+#endif
 
 #ifdef ADC_DYNAMIC_RANGE
         if (readAccu < adcMin - 0.5f)
@@ -173,3 +183,6 @@ float *AdcMul_GetValues(void)
 {
     return adcChannelValue;
 }
+
+#endif /* ADC_TO_MIDI_ENABLED */
+

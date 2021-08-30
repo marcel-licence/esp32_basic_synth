@@ -4,15 +4,21 @@
  * Author: Marcel Licence
  */
 
-#ifdef ESP32_AUDIO_KIT
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
 
 /*
  * Instructions: http://myosuploads3.banggood.com/products/20210306/20210306011116instruction.pdf
  *
- * Schmatic: https://docs.ai-thinker.com/_media/esp32-audio-kit_v2.2_sch.pdf
+ * Schematic: https://docs.ai-thinker.com/_media/esp32-audio-kit_v2.2_sch.pdf
  */
+#ifdef ESP32_AUDIO_KIT
 
 #include "AC101.h" /* only compatible with forked repo: https://github.com/marcel-licence/AC101 */
+
+//#define BUTTON_DEBUG_MSG
+
 
 /* AC101 pins */
 #define IIS_SCLK                    27
@@ -27,35 +33,66 @@
 #define GPIO_SEL_PA_EN              GPIO_SEL_21
 
 
-#define PIN_KEY_1					(36)
-#define PIN_KEY_2					(13)
-#define PIN_KEY_3					(19)
-#define PIN_KEY_4					(23)
-#define PIN_KEY_5					(18)
-#define PIN_KEY_6					(5)
+#define PIN_LED4    (22)
+#define PIN_LED5    (19)
 
+
+#ifdef AUDIO_KIT_BUTTON_DIGITAL
+/*
+ * when not modified and R66-R70 are placed on the board
+ */
+#define PIN_KEY_1                   (36)
+#define PIN_KEY_2                   (13)
+#define PIN_KEY_3                   (19)
+#define PIN_KEY_4                   (23)
+#define PIN_KEY_5                   (18)
+#define PIN_KEY_6                   (5)
 
 #define PIN_PLAY                    PIN_KEY_4
 #define PIN_VOL_UP                  PIN_KEY_5
 #define PIN_VOL_DOWN                PIN_KEY_6
+#endif
 
+#ifdef AUDIO_KIT_BUTTON_ANALOG
+/*
+ * modification required:
+ * - remove R66-R70
+ * - insert R60-R64 (0 Ohm or solder bridge)
+ * - insert R55-R59 using 1.8kOhm (recommended but other values might be possible with tweaking the code)
+ */
+#ifndef PIN_KEY_ANALOG
+#define PIN_KEY_ANALOG              (36)
+#endif
+
+#define KEY_SETTLE_VAL  9 /* use higher value if anaog buton detection is unstable */
+
+uint32_t keyMin[7] = {4095 - 32, 0, 462 - 32, 925 - 32, 1283 - 32, 1570 - 32, 1800 - 32};
+uint32_t keyMax[7] = {4095 + 32, 0 + 32, 525 + 32, 1006 + 32, 1374 + 32, 1570 + 32, 1800 + 32 };
+#endif
 
 #define OUTPUT_PIN 0
-#define MCLK_CH	0
-#define PWM_BIT	1
+#define MCLK_CH 0
+#define PWM_BIT 1
 
 static AC101 ac;
 
 /* actually only supporting 16 bit */
-//#define SAMPLE_SIZE_16BIT
+#define SAMPLE_SIZE_16BIT
 //#define SAMPLE_SIZE_24BIT
 //#define SAMPLE_SIZE_32BIT
 
-#define CHANNEL_COUNT	2
-#define WORD_SIZE	16
-#define I2S1CLK	(512*SAMPLE_RATE)
-#define BCLK	(SAMPLE_RATE*CHANNEL_COUNT*WORD_SIZE)
-#define LRCK	(SAMPLE_RATE*CHANNEL_COUNT)
+#ifndef SAMPLE_RATE
+#define SAMPLE_RATE 44100
+#endif
+#define CHANNEL_COUNT   2
+#define WORD_SIZE   16
+#define I2S1CLK (512*SAMPLE_RATE)
+#define BCLK    (SAMPLE_RATE*CHANNEL_COUNT*WORD_SIZE)
+#define LRCK    (SAMPLE_RATE*CHANNEL_COUNT)
+
+
+typedef void(*audioKitButtonCb)(uint8_t, uint8_t);
+extern audioKitButtonCb audioKitButtonCallback;
 
 /*
  * this function could be used to set up the masterclock
@@ -93,7 +130,8 @@ void ac101_setup()
 #if (SAMPLE_RATE==44100)&&(defined(SAMPLE_SIZE_16BIT))
     ac.SetI2sSampleRate(AC101::SAMPLE_RATE_44100);
     /*
-     * BCLK: 44100 * 2 * 16 =
+     * BCLK: 44100 * 2 * 16 = 1411200 Hz
+     * SYSCLK: 512 * fs = 512* 44100 = 22579200 Hz
      *
      * I2S1CLK/BCLK1 -> 512 * 44100 / 44100*2*16
      * BCLK1/LRCK -> 44100*2*16 / 44100 Obacht ... ein clock cycle goes high and low
@@ -119,8 +157,10 @@ void ac101_setup()
 #endif
 
     // Enable amplifier
+#if 0 /* amplifier only required when speakers attached? */
     pinMode(GPIO_PA_EN, OUTPUT);
     digitalWrite(GPIO_PA_EN, HIGH);
+#endif
 }
 
 /*
@@ -128,10 +168,17 @@ void ac101_setup()
  */
 void button_setup()
 {
+#ifdef AUDIO_KIT_BUTTON_DIGITAL
     // Configure keys on ESP32 Audio Kit board
     pinMode(PIN_PLAY, INPUT_PULLUP);
     pinMode(PIN_VOL_UP, INPUT_PULLUP);
     pinMode(PIN_VOL_DOWN, INPUT_PULLUP);
+#endif
+#ifdef AUDIO_KIT_BUTTON_ANALOG_OLD
+    adcAttachPin(PIN_KEY_ANALOG);
+    analogReadResolution(10);
+    analogSetAttenuation(ADC_11db);
+#endif
 }
 
 /*
@@ -157,20 +204,94 @@ void ac101_setSourceLine(void)
  */
 void button_loop()
 {
-#if 0 /* wrong place */
+#ifdef AUDIO_KIT_BUTTON_DIGITAL
     if (digitalRead(PIN_PLAY) == LOW)
     {
         Serial.println("PIN_PLAY pressed");
+        if (buttonMapping.key4_pressed != NULL)
+        {
+            buttonMapping.key4_pressed();
+        }
     }
     if (digitalRead(PIN_VOL_UP) == LOW)
     {
         Serial.println("PIN_VOL_UP pressed");
+        if (buttonMapping.key5_pressed != NULL)
+        {
+            buttonMapping.key5_pressed();
+        }
     }
     if (digitalRead(PIN_VOL_DOWN) == LOW)
     {
         Serial.println("PIN_VOL_DOWN pressed");
+        if (buttonMapping.key6_pressed != NULL)
+        {
+            buttonMapping.key6_pressed();
+        }
+    }
+#endif
+#ifdef AUDIO_KIT_BUTTON_ANALOG
+    static uint32_t lastKeyAD = 0xFFFF;
+    static uint32_t keyAD = 0;
+    static uint8_t pressedKey = 0;
+    static uint8_t newPressedKey = 0;
+    static uint8_t pressedKeyLast = 0;
+    static uint8_t keySettle = 0;
+
+    keyAD = analogRead(PIN_KEY_ANALOG);
+    if (keyAD != lastKeyAD)
+    {
+        //Serial.printf("keyAd: %d\n", keyAD);
+        lastKeyAD = keyAD;
+
+        //pressedKey = 0;
+        for (int i = 0; i < 7; i ++)
+        {
+            if ((keyAD >= keyMin[i]) && (keyAD < keyMax[i]))
+            {
+                newPressedKey = i;
+            }
+        }
+        if (newPressedKey != pressedKey)
+        {
+            keySettle = KEY_SETTLE_VAL;
+            pressedKey = newPressedKey;
+        }
+    }
+
+    if (keySettle > 0)
+    {
+        keySettle--;
+        if (keySettle == 0)
+        {
+            if (pressedKey != pressedKeyLast)
+            {
+                if (pressedKeyLast > 0)
+                {
+#ifdef BUTTON_DEBUG_MSG
+                    Serial.printf("Key %d up\n", pressedKeyLast);
+#endif
+                    if (audioKitButtonCallback != NULL)
+                    {
+                        audioKitButtonCallback(pressedKeyLast - 1, 0);
+                    }
+                }
+                if (pressedKey > 0)
+                {
+#ifdef BUTTON_DEBUG_MSG
+                    Serial.printf("Key %d down\n", pressedKey);
+#endif
+                    if (audioKitButtonCallback != NULL)
+                    {
+                        audioKitButtonCallback(pressedKey - 1, 1);
+                    }
+                }
+                pressedKeyLast = pressedKey;
+            }
+        }
     }
 #endif
 }
 
 #endif
+
