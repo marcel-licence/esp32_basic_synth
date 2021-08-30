@@ -72,8 +72,19 @@ Default PIN Mapping is:
 For more information refer to the MIDI related project: https://github.com/marcel-licence/esp32_usb_midi
 Using USB can be seen here: https://youtu.be/Mt3rT-SVZww
 
+Derived projects 
+---
+
+@MichaelPNolan added a phyicial interface, knobs etc. to make it standalone: https://github.com/MichaelPNolan/StandAloneSynth37key/tree/main/esp32_alone_synth
+
+Specifications and datasheets
+---
+
+ESP32-A1S (AC101 variant): https://www.makerfabs.com/desfile/files/ESP32-A1S%20Product%20Specification.pdf
+ESP32-A1S (ES8388 variant): https://github.com/marcel-licence/esp32_midi_sampler/files/7075076/esp32-a1s_v2.3_specification.pdf
+AC101 user manual: http://www.x-powers.com/en.php/Info/down/id/96
+ES8388 datasheet: http://www.everest-semi.com/pdf/ES8388%20DS.pdf
+ES8388 user guide: https://dl.radxa.com/rock2/docs/hw/ds/ES8388%20user%20Guide.pdf
+
 ---
 If you have questions or ideas please feel free to use the discussion area!
-
----
-
