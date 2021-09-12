@@ -1,7 +1,8 @@
 # esp32_basic_synth
-ESP32 based simple synthesizer project
+ESP32 based simple arduino synthesizer project
 
 The project can be seen in my video https://youtu.be/5XVK5MOKmZw
+Here is a little quick start guide to get started with arduino synthesizer / music projects: https://youtu.be/ZNxGCB-d68g
 
 ---
 The project has been tested on
