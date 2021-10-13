@@ -28,6 +28,20 @@ struct adc_to_midi_s adcToMidiLookUp[ADC_TO_MIDI_LOOKUP_SIZE] =
     {6, 0x10},
     {7, 0x10},
 };
+
+
+struct adc_to_midi_mapping_s adcToMidiMapping =
+{
+    adcToMidiLookUp,
+    sizeof(adcToMidiLookUp) / sizeof(adcToMidiLookUp[0]),
+    //Midi_ControlChange,
+#ifdef MIDI_VIA_USB_ENABLED
+    UsbMidi_SendControlChange,
+#else
+    Midi_ControlChange,
+#endif
+};
+
 #endif
 
 /*
@@ -73,6 +87,19 @@ struct midiControllerMapping edirolMapping[] =
     { 0x0, 0x0b, "VolumePedal", NULL, NULL, 0},
 
     /* slider */
+#ifdef FAKE_ORGAN
+    { 0x0, 0x11, "S1", NULL, Synth_SetFader, 0},
+    { 0x1, 0x11, "S2", NULL, Synth_SetFader, 1},
+    { 0x2, 0x11, "S3", NULL, Synth_SetFader, 2},
+    { 0x3, 0x11, "S4", NULL, Synth_SetFader, 3},
+
+    { 0x4, 0x11, "S5", NULL, Synth_SetFader, 4},
+    { 0x5, 0x11, "S6", NULL, Synth_SetFader, 5},
+    { 0x6, 0x11, "S7", NULL, Synth_SetFader, 6},
+    { 0x7, 0x11, "S8", NULL, Synth_SetFader, 7},
+
+    { 0x1, 0x12, "S9", NULL, Synth_SetFader, 8},
+#else
     { 0x0, 0x11, "S1", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_ATTACK},
     { 0x1, 0x11, "S2", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_DECAY},
     { 0x2, 0x11, "S3", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_SUSTAIN},
@@ -84,6 +111,7 @@ struct midiControllerMapping edirolMapping[] =
     { 0x7, 0x11, "S8", NULL, Synth_SetParam, SYNTH_PARAM_FIL_ENV_RELEASE},
 
     { 0x1, 0x12, "S9", NULL, Synth_SetParam, 8},
+#endif
 
     /* rotary */
 #ifdef USE_UNISON

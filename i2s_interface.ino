@@ -1,7 +1,20 @@
 /*
  * this file includes all required function to setup and drive the i2s interface
  *
- * Author: Marcel Licence
+    Copyright (C) 2021  Marcel Licence
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifdef __CDT_PARSER__
@@ -25,7 +38,7 @@ const i2s_port_t i2s_port_number = I2S_NUM_0;
  * for the following implementation
  */
 #ifdef I2S_NODAC
-
+/* todo integrate code, or external module from hack a day using i2s signal wire as DAC */
 #else
 
 bool i2s_write_sample_32ch2(uint8_t *sample);
@@ -223,6 +236,7 @@ void i2s_read_stereo_samples(float *fl_sample, float *fr_sample)
 #ifdef SAMPLE_BUFFER_SIZE
 void i2s_read_stereo_samples_buff(float *fl_sample, float *fr_sample, const int buffLen)
 {
+#ifdef I2S_DIN_PIN
     static size_t bytes_read = 0;
 
 #ifdef SAMPLE_SIZE_16BIT
@@ -248,6 +262,7 @@ void i2s_read_stereo_samples_buff(float *fl_sample, float *fr_sample, const int 
         fr_sample[n] = ((float)sampleData[n].ch[0] / (16383.0f));
         fl_sample[n] = ((float)sampleData[n].ch[1] / (16383.0f));
     }
+#endif
 }
 #endif /* #ifdef SAMPLE_BUFFER_SIZE */
 

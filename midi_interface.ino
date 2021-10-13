@@ -1,7 +1,20 @@
 /*
  * a simple implementation to use midi
  *
- * Author: Marcel Licence
+    Copyright (C) 2021  Marcel Licence
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifdef __CDT_PARSER__
@@ -19,7 +32,7 @@
 #endif
 
 /* use define to dump midi data */
-//#define DUMP_SERIAL2_TO_SERIAL
+//#define MIDI_DUMP_SERIAL2_TO_SERIAL
 
 /*
  * structure is used to build the mapping table
@@ -149,8 +162,8 @@ inline void Midi_HandleShortMsg(uint8_t *data, uint8_t cable)
 void Midi_Setup()
 {
 #ifdef MIDI_RX_PIN
-#ifdef TXD2
-    Serial2.begin(MIDI_SERIAL2_BAUDRATE, SERIAL_8N1, MIDI_RX_PIN, TXD2);
+#ifdef MIDI_TX_PIN
+    Serial2.begin(MIDI_SERIAL2_BAUDRATE, SERIAL_8N1, MIDI_RX_PIN, MIDI_TX_PIN);
 #else
     Serial2.begin(MIDI_SERIAL2_BAUDRATE, SERIAL_8N1, MIDI_RX_PIN);
 #endif
@@ -173,7 +186,7 @@ void Midi_CheckSerial2(void)
     {
         uint8_t incomingByte = Serial2.read();
 
-#ifdef DUMP_SERIAL2_TO_SERIAL
+#ifdef MIDI_DUMP_SERIAL2_TO_SERIAL
         Serial.printf("%02x", incomingByte);
 #endif
         /* ignore live messages */
@@ -193,9 +206,9 @@ void Midi_CheckSerial2(void)
         inMsg[inMsgIndex] = incomingByte;
         inMsgIndex += 1;
 
-        if (inMsgIndex >= 3)
+        if ((inMsgIndex >= 3) || (((inMsg[0] == 0xD0) || (inMsg[0] == 0xC0)) && inMsgIndex >= 2))
         {
-#ifdef DUMP_SERIAL2_TO_SERIAL
+#ifdef MIDI_DUMP_SERIAL2_TO_SERIAL
             Serial.printf(">%02x %02x %02x\n", inMsg[0], inMsg[1], inMsg[2]);
 #endif
             Midi_HandleShortMsg(inMsg, 0);
@@ -253,7 +266,7 @@ void Midi_CheckSerial(void)
         inMsg[inMsgIndex] = incomingByte;
         inMsgIndex += 1;
 
-        if (inMsgIndex >= 3)
+        if ((inMsgIndex >= 3) || (((inMsg[0] == 0xD0) || (inMsg[0] == 0xC0)) && inMsgIndex >= 2))
         {
             Midi_HandleShortMsg(inMsg, 1);
             inMsgIndex = 0;

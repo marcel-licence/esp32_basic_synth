@@ -12,6 +12,12 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+
+//#define ESP32_AUDIO_KIT
+#define BOARD_ML_V1
+
+//#define FAKE_ORGAN
+
 /* use following when you are using the esp32 audio kit v2.2 */
 //#define ESP32_AUDIO_KIT /* project has not been tested on other hardware, modify on own risk */
 //#define ES8388_ENABLED /* use this if the Audio Kit is equipped with ES8388 instead of the AC101 */
@@ -38,6 +44,8 @@
 
 
 #ifdef ESP32_AUDIO_KIT
+#include "./boards/board_audio_kit_ac101.h"
+//#include "./boards/board_audio_kit_es8388.h"
 
 /* on board led */
 #define BLINK_LED_PIN     19 // IO19 -> D5
@@ -56,6 +64,9 @@
 #define I2C_SDA 18
 #define I2C_SCL 23
 #endif
+
+#elif (defined BOARD_ML_V1)
+#include "./boards/board_ml_v1.h"
 
 #else /* ESP32_AUDIO_KIT */
 
@@ -92,6 +103,8 @@
  */
 #ifdef ESP32_AUDIO_KIT
 #define MIDI_RX_PIN 22 /* U2RRXD */
+#elif (defined BOARD_ML_V1)
+/* defined by board */
 #else
 #define MIDI_RX_PIN 16 /* U2RRXD */
 #define TXD2 17

@@ -5,8 +5,25 @@
  * - implemented ADSR for velocity and filter
  * - allows usage of multiple oscillators per voice
  *
- * Author: Marcel Licence
+	Copyright (C) 2021  Marcel Licence
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+#ifdef __CDT_PARSER__
+#include "cdt.h"
+#endif
 
 /*
  * activate the following macro to enable unison mode
@@ -55,6 +72,10 @@
 #define MAX_POLY_VOICE	11 /* max single voices, can use multiple osc */
 #endif
 
+#ifdef FAKE_ORGAN
+float drawbar[9] = {1, 1, 1, 1, 0, 0, 0, 0, 0};
+uint8_t dbOffset[9] = {0, 12 + 7, 12, 12 + 7 + 5, 12 + 7 + 5 + 7, 12 + 7 + 5 + 7 + 5, 12 + 7 + 5 + 7 + 5 + 4, 12 + 7 + 5 + 7 + 5 + 4 + 3};
+#endif
 
 /*
  * this is just a kind of magic to go through the waveforms
@@ -471,7 +492,7 @@ inline void Synth_Process(float *left, float *right)
     if (count % 64 == 0)
     {
         float pitchVar = pitchBendValue + GetModulation();
-        static float lastPitchVar = 0;
+        //static float lastPitchVar = 0;
         pitchMultiplier = pow(2.0f, pitchVar / 12.0f);
     }
 
@@ -649,6 +670,24 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 
     osc_act += 1;
 
+#ifdef FAKE_ORGAN
+    for (int i = 0; i < 9; i++)
+    {
+        osc = getFreeOsc();
+        if (osc == NULL)
+        {
+            //Serial.printf("voc: %d, osc: %d\n", voc_act, osc_act);
+            return ;
+        }
+
+        osc->addVal = midi_note_to_add[note + dbOffset[i]];
+        osc->samplePos = (uint32_t)random(1 << 31); /* otherwise it sounds ... bad!? */
+        osc->waveForm = &selectedWaveForm2;
+        osc->dest = voice->lastSample;
+
+        osc_act += 1;
+    }
+#endif
 
 #ifdef USE_UNISON
 
@@ -759,6 +798,16 @@ void Synth_PitchBend(uint8_t ch, float bend)
     pitchBendValue = bend;
     Serial.printf("pitchBendValue: %0.3f\n", pitchBendValue);
 }
+
+#ifdef FAKE_ORGAN
+void Synth_SetFader(uint8_t slider, float value)
+{
+    if ((slider < 0) && (slider < 9))
+    {
+        drawbar[slider] = value;
+    }
+}
+#endif
 
 void Synth_SetParam(uint8_t slider, float value)
 {

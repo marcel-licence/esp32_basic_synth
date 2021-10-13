@@ -5,10 +5,27 @@
  *
  * Define your adc mapping in the lookup table
  *
- * Author: Marcel Licence
- *
  * Reference: https://youtu.be/l8GrNxElRkc
+ *
+    Copyright (C) 2021  Marcel Licence
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
 
 #ifdef ADC_TO_MIDI_ENABLED
 
@@ -18,13 +35,23 @@ struct adc_to_midi_s
     uint8_t cc;
 };
 
+struct adc_to_midi_mapping_s
+{
+    struct adc_to_midi_s *adcToMidi;
+    int adcToMidiCount;
+    void(*callback)(uint8_t ch, uint8_t cc, uint8_t value);
+};
+
 extern struct adc_to_midi_s adcToMidiLookUp[]; /* definition in z_config.ino */
+extern struct adc_to_midi_mapping_s adcToMidiMapping;
 
 uint8_t lastSendVal[ADC_TO_MIDI_LOOKUP_SIZE];  /* define ADC_TO_MIDI_LOOKUP_SIZE in top level file */
 #define ADC_INVERT
 #define ADC_THRESHOLD       (1.0f/200.0f)
-#define ADC_OVERSAMPLING    2048
-
+#ifdef ADC_MCP_CTRL_ENABLED
+#define ADC_OVERSAMPLING   16
+#else
+#endif
 
 //#define ADC_DYNAMIC_RANGE
 //#define ADC_DEBUG_CHANNEL0_DATA
@@ -49,6 +76,7 @@ void AdcMul_Init(void)
 
     adcAttachPin(ADC_MUL_SIG_PIN);
 
+#ifndef ADC_MCP_CTRL_ENABLED
     pinMode(ADC_MUL_S0_PIN, OUTPUT);
 #if ADC_INPUTS > 2
     pinMode(ADC_MUL_S1_PIN, OUTPUT);
@@ -59,16 +87,27 @@ void AdcMul_Init(void)
 #if ADC_INPUTS > 8
     pinMode(ADC_MUL_S3_PIN, OUTPUT);
 #endif
+#endif
 }
 
 void AdcMul_Process(void)
 {
     static float readAccu = 0;
     static float adcMin = 0;//4000;
+#ifdef ADC_MCP_CTRL_ENABLED
+    static float adcMax = 16350;
+#else
     static float adcMax = 420453;//410000;
+#endif
 
+#ifdef ADC_MCP_CTRL_ENABLED
+    MCP23_Select(SPI_SEL_MCP23S17);
+#endif
     for (int j = 0; j < ADC_INPUTS; j++)
     {
+#ifdef ADC_MCP_CTRL_ENABLED
+        MCP23_SelAdc(j);
+#else
         digitalWrite(ADC_MUL_S0_PIN, ((j & (1 << 0)) > 0) ? HIGH : LOW);
 #if ADC_INPUTS > 2
         digitalWrite(ADC_MUL_S1_PIN, ((j & (1 << 1)) > 0) ? HIGH : LOW);
@@ -82,6 +121,7 @@ void AdcMul_Process(void)
 
         /* give some time for transition */
         delay(1);
+#endif
 
         readAccu = 0;
 #if 0
@@ -163,12 +203,16 @@ void AdcMul_Process(void)
 #endif
                     if (lastSendVal[idx] != midiValueU7)
                     {
-                        Midi_ControlChange(adcToMidiLookUp[idx].ch, adcToMidiLookUp[idx].cc, midiValueU7);
+                        if (adcToMidiMapping.callback != NULL)
+                        {
+                            adcToMidiMapping.callback(adcToMidiLookUp[idx].ch, adcToMidiLookUp[idx].cc, midiValueU7);
+                        }
+                        // Midi_ControlChange(adcToMidiLookUp[idx].ch, adcToMidiLookUp[idx].cc, midiValueU7);
                         lastSendVal[idx] = midiValueU7;
                     }
                 }
 #ifdef ADC_DEBUG_CHANNEL0_DATA
-                switch (j == 0)
+                if (j == 0)
                 {
                     float adcValFrac = (adcChannelValue[j] * 127.999) - midiValueU7;
                     Serial.printf("adcChannelValue[j]: %f -> %0.3f -> %0.3f-> %d, %0.3f\n", readAccu, readValF, adcChannelValue[j], midiValueU7, adcValFrac);

@@ -2,19 +2,40 @@
  * pinout of ESP32 DevKit found here:
  * https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/
  *
- * Author: Marcel Licence
+    Copyright (C) 2021  Marcel Licence
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
 
 #include "config.h"
 
 /*
  * required include files
+ * add also includes used for other modules
+ * otherwise arduino generated declaration may cause errors
  */
-#include <arduino.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Arduino.h>
 #include <WiFi.h>
 
-/* this is used to add a task to core 0 */
-TaskHandle_t  Core0TaskHnd ;
+
+
 
 void App_UsbMidiShortMsgReceived(uint8_t *msg)
 {
@@ -33,6 +54,11 @@ void setup()
 
     Serial.println();
 
+    Serial.printf("esp32_basic_synth  Copyright (C) 2021  Marcel Licence\n");
+    Serial.printf("This program comes with ABSOLUTELY NO WARRANTY;\n");
+    Serial.printf("This is free software, and you are welcome to redistribute it\n");
+    Serial.printf("under certain conditions; \n");
+
     Delay_Init();
 
     Serial.printf("Initialize Synth Module\n");
@@ -41,7 +67,9 @@ void setup()
 
     // setup_reverb();
 
+#ifdef BLINK_LED_PIN
     Blink_Setup();
+#endif
 
 #ifdef ESP32_AUDIO_KIT
 #ifdef ES8388_ENABLED
@@ -86,8 +114,21 @@ void setup()
 #endif
 
 #if (defined ADC_TO_MIDI_ENABLED) || (defined MIDI_VIA_USB_ENABLED)
-    xTaskCreatePinnedToCore(Core0Task, "Core0Task", 8000, NULL, 999, &Core0TaskHnd, 0);
+    Core0TaskInit();
 #endif
+}
+
+/*
+ * Core 0
+ */
+/* this is used to add a task to core 0 */
+TaskHandle_t Core0TaskHnd;
+
+inline
+void Core0TaskInit()
+{
+    /* we need a second task for the terminal output */
+    xTaskCreatePinnedToCore(Core0Task, "CoreTask0", 8000, NULL, 999, &Core0TaskHnd, 0);
 }
 
 void Core0TaskSetup()
@@ -126,6 +167,10 @@ void Core0TaskLoop()
 #ifdef MIDI_VIA_USB_ENABLED
     UsbMidi_Loop();
 #endif
+
+#ifdef BOARD_ML_V1
+    MCP23_Loop();
+#endif
 }
 
 void Core0Task(void *parameter)
@@ -148,7 +193,9 @@ void Core0Task(void *parameter)
  */
 inline void Loop_1Hz(void)
 {
+#ifdef BLINK_LED_PIN
     Blink_Process();
+#endif
 }
 
 
@@ -193,6 +240,62 @@ void loop()
 #ifdef MIDI_VIA_USB_ENABLED
         UsbMidi_ProcessSync();
 #endif
+    }
+}
+
+
+/*
+ * Test functions
+ */
+
+void  ScanI2C(void)
+{
+
+    Wire.begin(21, 22);
+
+    byte error, address;
+    int nDevices;
+
+    Serial.println("Scanning...");
+
+    nDevices = 0;
+    for (address = 1; address < 127; address++)
+    {
+        // The i2c_scanner uses the return value of
+        // the Write.endTransmisstion to see if
+        // a device did acknowledge to the address.
+        Wire.beginTransmission(address);
+        error = Wire.endTransmission();
+
+        if (error == 0)
+        {
+            Serial.print("I2C device found at address 0x");
+            if (address < 16)
+            {
+                Serial.print("0");
+            }
+            Serial.print(address, HEX);
+            Serial.println("  !");
+
+            nDevices++;
+        }
+        else if (error == 4)
+        {
+            Serial.print("Unknown error at address 0x");
+            if (address < 16)
+            {
+                Serial.print("0");
+            }
+            Serial.println(address, HEX);
+        }
+    }
+    if (nDevices == 0)
+    {
+        Serial.println("No I2C devices found\n");
+    }
+    else
+    {
+        Serial.println("done\n");
     }
 }
 
