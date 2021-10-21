@@ -1,24 +1,42 @@
 /*
+ * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
+ *
+ * Copyright (c) 2021 Marcel Licence
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Dieses Programm ist Freie Software: Sie können es unter den Bedingungen
+ * der GNU General Public License, wie von der Free Software Foundation,
+ * Version 3 der Lizenz oder (nach Ihrer Wahl) jeder neueren
+ * veröffentlichten Version, weiter verteilen und/oder modifizieren.
+ *
+ * Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird, jedoch
+ * OHNE JEDE GEWÄHR,; sogar ohne die implizite
+ * Gewähr der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+ * Siehe die GNU General Public License für weitere Einzelheiten.
+ *
+ * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+ * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
+ */
+
+/*
  * Implementation of a simple polyphonic synthesizer module
  * - it supports different waveforms
  * - it supports polyphony
  * - implemented ADSR for velocity and filter
  * - allows usage of multiple oscillators per voice
  *
-	Copyright (C) 2021  Marcel Licence
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifdef __CDT_PARSER__
@@ -38,25 +56,25 @@
 /*
  * Param indices for Synth_SetParam function
  */
-#define SYNTH_PARAM_VEL_ENV_ATTACK	0
-#define SYNTH_PARAM_VEL_ENV_DECAY	1
-#define SYNTH_PARAM_VEL_ENV_SUSTAIN	2
-#define SYNTH_PARAM_VEL_ENV_RELEASE	3
-#define SYNTH_PARAM_FIL_ENV_ATTACK	4
-#define SYNTH_PARAM_FIL_ENV_DECAY	5
-#define SYNTH_PARAM_FIL_ENV_SUSTAIN	6
-#define SYNTH_PARAM_FIL_ENV_RELEASE	7
+#define SYNTH_PARAM_VEL_ENV_ATTACK  0
+#define SYNTH_PARAM_VEL_ENV_DECAY   1
+#define SYNTH_PARAM_VEL_ENV_SUSTAIN 2
+#define SYNTH_PARAM_VEL_ENV_RELEASE 3
+#define SYNTH_PARAM_FIL_ENV_ATTACK  4
+#define SYNTH_PARAM_FIL_ENV_DECAY   5
+#define SYNTH_PARAM_FIL_ENV_SUSTAIN 6
+#define SYNTH_PARAM_FIL_ENV_RELEASE 7
 #ifdef USE_UNISON
-#define SYNTH_PARAM_DETUNE_1		8
-#define SYNTH_PARAM_UNISON_2		9
+#define SYNTH_PARAM_DETUNE_1        8
+#define SYNTH_PARAM_UNISON_2        9
 #else
-#define SYNTH_PARAM_WAVEFORM_1		8
-#define SYNTH_PARAM_WAVEFORM_2		9
+#define SYNTH_PARAM_WAVEFORM_1      8
+#define SYNTH_PARAM_WAVEFORM_2      9
 #endif
-#define SYNTH_PARAM_MAIN_FILT_CUTOFF	10
-#define SYNTH_PARAM_MAIN_FILT_RESO		11
-#define SYNTH_PARAM_VOICE_FILT_RESO		12
-#define SYNTH_PARAM_VOICE_NOISE_LEVEL	13
+#define SYNTH_PARAM_MAIN_FILT_CUTOFF    10
+#define SYNTH_PARAM_MAIN_FILT_RESO      11
+#define SYNTH_PARAM_VOICE_FILT_RESO     12
+#define SYNTH_PARAM_VOICE_NOISE_LEVEL   13
 
 
 /*
@@ -64,12 +82,12 @@
  */
 #ifdef USE_UNISON
 /* use another setting, because unison supports more than 2 osc per voice */
-#define MAX_DETUNE		12 /* 1 + 11 additional tones */
-#define MAX_POLY_OSC	36 /* osc polyphony, always active reduces single voices max poly */
-#define MAX_POLY_VOICE	3  /* max single voices, can use multiple osc */
+#define MAX_DETUNE      12 /* 1 + 11 additional tones */
+#define MAX_POLY_OSC    36 /* osc polyphony, always active reduces single voices max poly */
+#define MAX_POLY_VOICE  3  /* max single voices, can use multiple osc */
 #else
-#define MAX_POLY_OSC	22 /* osc polyphony, always active reduces single voices max poly */
-#define MAX_POLY_VOICE	11 /* max single voices, can use multiple osc */
+#define MAX_POLY_OSC    22 /* osc polyphony, always active reduces single voices max poly */
+#define MAX_POLY_VOICE  11 /* max single voices, can use multiple osc */
 #endif
 
 #ifdef FAKE_ORGAN
@@ -81,11 +99,11 @@ uint8_t dbOffset[9] = {0, 12 + 7, 12, 12 + 7 + 5, 12 + 7 + 5 + 7, 12 + 7 + 5 + 7
  * this is just a kind of magic to go through the waveforms
  * - WAVEFORM_BIT sets the bit length of the pre calculated waveforms
  */
-#define WAVEFORM_BIT	10UL
-#define WAVEFORM_CNT	(1<<WAVEFORM_BIT)
-#define WAVEFORM_Q4		(1<<(WAVEFORM_BIT-2))
-#define WAVEFORM_MSK	((1<<WAVEFORM_BIT)-1)
-#define WAVEFORM_I(i)	((i) >> (32 - WAVEFORM_BIT)) & WAVEFORM_MSK
+#define WAVEFORM_BIT    10UL
+#define WAVEFORM_CNT    (1<<WAVEFORM_BIT)
+#define WAVEFORM_Q4     (1<<(WAVEFORM_BIT-2))
+#define WAVEFORM_MSK    ((1<<WAVEFORM_BIT)-1)
+#define WAVEFORM_I(i)   ((i) >> (32 - WAVEFORM_BIT)) & WAVEFORM_MSK
 
 
 #define MIDI_NOTE_CNT 128
@@ -98,7 +116,7 @@ uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
 /*
  * set the correct count of available waveforms
  */
-#define WAVEFORM_TYPE_COUNT	7
+#define WAVEFORM_TYPE_COUNT 7
 
 /*
  * add here your waveforms
@@ -459,7 +477,7 @@ inline
 float GetModulation(void)
 {
     float modSpeed = modulationSpeed;
-    return modulationDepth * modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f )));
+    return modulationDepth * modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f)));
 }
 
 static float out_l, out_r;
@@ -503,7 +521,7 @@ inline void Synth_Process(float *left, float *right)
     {
         oscillatorT *osc = &oscPlayer[i];
         {
-            osc->samplePos += (uint32_t)( pitchMultiplier * ((float)osc->addVal));
+            osc->samplePos += (uint32_t)(pitchMultiplier * ((float)osc->addVal));
             float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
             osc->dest[0] += osc->pan_l * sig;
             osc->dest[1] += osc->pan_r * sig;
@@ -650,7 +668,7 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
      * add oscillator
      */
 #ifdef USE_UNISON
-    if (unison > 0 )
+    if (unison > 0)
     {
         /*
          * shift first oscillator down
