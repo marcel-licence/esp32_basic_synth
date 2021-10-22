@@ -1,7 +1,10 @@
-# esp32_basic_synth
-ESP32 based simple arduino synthesizer project
-
-- video presentation of the initial state of this project https://youtu.be/5XVK5MOKmZw
+<h1 align="center">esp32_basic_synth</h1>
+<h3 align="center">ESP32 based DIY polyphonic MIDI synthesizer module Arduino project</h3>  
+<p align="center"> 
+  <img src="img/splash.jpg" alt="project picture" width="480px" height="270px"><br>
+  <a href="https://youtu.be/5XVK5MOKmZw">link to the video</a>
+</p>
+More infos:
 - little quick start guide to get started with arduino synthesizer / music projects: https://youtu.be/ZNxGCB-d68g
 
 ---
