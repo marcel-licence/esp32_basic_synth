@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,16 +28,24 @@
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
  */
 
-/*
- * z_config.ino
+/**
+ * @file z_config.ino
+ * @author Marcel Licence
+ * @date 12.05.2021
  *
+ * @brief This file contains the mapping configuration
  * Put all your project configuration here (no defines etc)
  * This file will be included at the and can access all
  * declarations and type definitions
  *
- *  Created on: 12.05.2021
- *      Author: Marcel Licence
+ * @see ESP32 Arduino DIY Synthesizer Projects - Little startup guide to get your MIDI synth working - https://youtu.be/ZNxGCB-d68g
  */
+
+
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
+
 
 #ifdef AUDIO_KIT_BUTTON_ANALOG
 audioKitButtonCb audioKitButtonCallback = App_ButtonCb;

@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,14 +28,24 @@
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
  */
 
-/*
- * a simple implementation to use midi
+/**
+ * @file midi_interface.ino
+ * @author Marcel Licence
+ * @date 04.10.2021
  *
+ * @brief This file contains an implementation of a simple MIDI interpreter to parse incoming messages
+ *
+ * MIDI_DUMP_Serial1_TO_SERIAL <- when active received data will be output as hex on serial(1)
+ * MIDI_SERIAL1_BAUDRATE <- use define to override baud-rate for MIDI, otherwise default of 31250 will be used
+ *
+ * @see https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message
  */
+
 
 #ifdef __CDT_PARSER__
 #include <cdt.h>
 #endif
+
 
 /*
  * look for midi interface using 1N136

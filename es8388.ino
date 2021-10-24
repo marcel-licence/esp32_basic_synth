@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,16 +28,22 @@
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
  */
 
-/*
- * es8388.ino
+/**
+ * @file es8388.ino
+ * @author Marcel Licence
+ * @date 22.08.2021
  *
- *  Created on: 22.08.2021
- *      Author: Marcel Licence
+ * @brief This module is used to initialize the ES8388
+ *
+ * @see ESP32 Audio Kit AC101 codec failure - Get synthesizer projects working based on ES8388 - https://youtu.be/8UB3fYPjqSk
+ * @see https://github.com/espressif/esp-adf/blob/master/components/audio_hal/driver/es8388/es8388.c
  */
+
 
 #ifdef __CDT_PARSER__
 #include <cdt.h>
 #endif
+
 
 #ifdef ES8388_ENABLED
 /*

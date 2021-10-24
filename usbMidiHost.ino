@@ -1,17 +1,55 @@
 /*
- * usbMidiHost.ino
+ * Copyright (c) 2021 Marcel Licence
  *
- * This file includes the implementation for MIDI in/out
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Dieses Programm ist Freie Software: Sie können es unter den Bedingungen
+ * der GNU General Public License, wie von der Free Software Foundation,
+ * Version 3 der Lizenz oder (nach Ihrer Wahl) jeder neueren
+ * veröffentlichten Version, weiter verteilen und/oder modifizieren.
+ *
+ * Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird, jedoch
+ * OHNE JEDE GEWÄHR,; sogar ohne die implizite
+ * Gewähr der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+ * Siehe die GNU General Public License für weitere Einzelheiten.
+ *
+ * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
+ * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file usbMidiHost.ino
+ * @author Marcel Licence
+ * @date 18.05.2021
+ *
+ * @brief This file includes the implementation for MIDI in/out
  * via the USB Host module using the "Revision 2.0 of MAX3421E-based USB Host Shield Library"
- *
- *  Created on: 18.05.2021
- *      Author: Marcel Licence
  *
  * You will require to use following library:
  * https://github.com/felis/USB_Host_Shield_2.0
  *
  * Please check out USB-MIDI dump utility from Yuuichi Akagawa
+ *
+ * @see Mini USB host shield with ESP32 as MIDI interface (MAX3421E add-on for arduino synthesizer projects) - https://youtu.be/Mt3rT-SVZww
+ * @see https://github.com/felis/USB_Host_Shield_2.0/blob/master/examples/USBH_MIDI/USBH_MIDI_dump/USBH_MIDI_dump.ino
  */
+
+
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
+
 
 #ifdef MIDI_VIA_USB_ENABLED
 /*
