@@ -48,7 +48,7 @@
 //#define ESP32_AUDIO_KIT
 #define BOARD_ML_V1
 
-#define FAKE_ORGAN
+//#define FAKE_ORGAN
 #define SAMPLE_BUFFER_SIZE 48
 
 /* use following when you are using the esp32 audio kit v2.2 */
