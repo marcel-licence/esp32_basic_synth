@@ -43,6 +43,13 @@
 #include "cdt.h"
 #endif
 
+
+/* requires library from  https://github.com/marcel-licence/ML_SynthTools */
+#include <ml_oscillator.h>
+#include <ml_synth_tools.h>
+
+ML_Oscillator *getFreeOsc();
+
 /*
  * activate the following macro to enable unison mode
  * by default the saw wave form will be used
@@ -76,6 +83,16 @@
 #define SYNTH_PARAM_VOICE_FILT_RESO     12
 #define SYNTH_PARAM_VOICE_NOISE_LEVEL   13
 
+#define SYNTH_PARAM_PITCH_BEND_RANGE    14
+#define SYNTH_PARAM_MODULATION_SPEED    15
+#define SYNTH_PARAM_MODULATION_PITCH    16
+
+#define SYNTH_PARAM_PULSE_WIDTH     17
+#define SYNTH_PARAM_PULSE_LEVEL     18
+#define SYNTH_PARAM_PULSE_MUL       19
+#define SYNTH_PARAM_PULSE_MOD_DEPTH 20
+#define SYNTH_PARAM_PULSE_MOD_SPEED 21
+#define SYNTH_PARAM_PULSE_OFFSET    22
 
 /*
  * Following defines can be changed for different puprposes
@@ -198,7 +215,7 @@ struct oscillatorT
 };
 
 float voiceSink[2];
-struct oscillatorT oscPlayer[MAX_POLY_OSC];
+ML_Oscillator oscPlayer[MAX_POLY_OSC];
 
 uint32_t osc_act = 0;
 
@@ -234,6 +251,8 @@ uint32_t voc_act = 0;
 void Synth_Init()
 {
     randomSeed(34547379);
+
+    ml_synth_tools_init();
 
     /*
      * we do not check if malloc was successful
@@ -286,9 +305,10 @@ void Synth_Init()
      */
     for (int i = 0; i < MAX_POLY_OSC; i++)
     {
-        oscillatorT *osc = &oscPlayer[i];
-        osc->waveForm = &silence;
-        osc->dest = voiceSink;
+        ML_Oscillator *osc = &oscPlayer[i];
+        osc->SetSaw(saw);
+        osc->SetTri(tri);
+        osc->SetWaveform(silence);
     }
 
     /*
@@ -452,10 +472,10 @@ void Voice_Off(uint32_t i)
     notePlayerT *voice = &voicePlayer[i];
     for (int f = 0; f < MAX_POLY_OSC; f++)
     {
-        oscillatorT *osc = &oscPlayer[f];
-        if (osc->dest == voice->lastSample)
+        ML_Oscillator *osc = &oscPlayer[f];
+        if (osc->isCon(&voice->lastSample[0]))
         {
-            osc->dest = voiceSink;
+            osc->Stop();
             osc_act -= 1;
         }
     }
@@ -515,13 +535,8 @@ inline void Synth_Process(float *left, float *right)
      */
     for (int i = 0; i < MAX_POLY_OSC; i++)
     {
-        oscillatorT *osc = &oscPlayer[i];
-        {
-            osc->samplePos += (uint32_t)(pitchMultiplier * ((float)osc->addVal));
-            float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
-            osc->dest[0] += osc->pan_l * sig;
-            osc->dest[1] += osc->pan_r * sig;
-        }
+        oscPlayer[i].SetPitchMultiplier(pitchMultiplier);
+        oscPlayer[i].ProcessBuffer(left, right, 1);
     }
 
     /*
@@ -589,11 +604,11 @@ inline void Synth_Process(float *left, float *right)
     *right = out_r;
 }
 
-struct oscillatorT *getFreeOsc()
+ML_Oscillator *getFreeOsc()
 {
     for (int i = 0; i < MAX_POLY_OSC ; i++)
     {
-        if (oscPlayer[i].dest == voiceSink)
+        if (oscPlayer[i].isFree())
         {
             return &oscPlayer[i];
         }
@@ -623,7 +638,7 @@ inline void Filter_Reset(struct filterProcT *filter)
 inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 {
     struct notePlayerT *voice = getFreeVoice();
-    struct oscillatorT *osc = getFreeOsc();
+    ML_Oscillator *osc = getFreeOsc();
 
     /*
      * No free voice found, return otherwise crash xD
@@ -673,14 +688,8 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     }
     else
 #endif
-    {
-        osc->addVal = midi_note_to_add[note];
-    }
-    osc->samplePos = 0;
-    osc->waveForm = &selectedWaveForm;
-    osc->dest = voice->lastSample;
-    osc->pan_l = 1;
-    osc->pan_r = 1;
+        osc->Start(&voice->lastSample[0], &voice->lastSample[1], midi_note_to_add[note]);
+
 
     osc_act += 1;
 
@@ -727,6 +736,7 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
         osc_act += 1;
     }
 #else
+#if 0
     osc = getFreeOsc();
     if (osc != NULL)
     {
@@ -742,6 +752,7 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
             osc_act += 1;
         }
     }
+#endif
 #endif
 
     /*
@@ -878,6 +889,36 @@ void Synth_SetParam(uint8_t slider, float value)
     case SYNTH_PARAM_VOICE_NOISE_LEVEL:
         soundNoiseLevel = value;
         Serial.printf("voice noise level: %0.3f\n", soundNoiseLevel);
+        break;
+
+    case SYNTH_PARAM_PULSE_WIDTH:
+        ML_Oscillator::paramPulseWidth = value;
+        Serial.printf("paramPulseWidth: %0.3f\n", ML_Oscillator::paramPulseWidth);
+        break;
+
+    case SYNTH_PARAM_PULSE_LEVEL:
+        ML_Oscillator::paramPulseLevel = value; //(4.0f * value) - 2.0f;
+        Serial.printf("paramPulseLevel: %0.3f\n", ML_Oscillator::paramPulseLevel);
+        break;
+
+    case SYNTH_PARAM_PULSE_MUL:
+        ML_Oscillator::paramPulseMultiplier = 1 + (value * 15.0f);
+        Serial.printf("paramPulseMultiplier: %d\n", ML_Oscillator::paramPulseMultiplier);
+        break;
+
+    case SYNTH_PARAM_PULSE_MOD_DEPTH:
+        ML_Oscillator::paramPulseWidthMod = value;
+        Serial.printf("paramPulseWidthMod: %0.3f\n", ML_Oscillator::paramPulseWidthMod);
+        break;
+
+    case SYNTH_PARAM_PULSE_MOD_SPEED:
+        ML_Oscillator::paramPulseWidthSpeed = value * value * 64;
+        Serial.printf("paramPulseWidthSpeed: %0.3f\n", ML_Oscillator::paramPulseWidthSpeed);
+        break;
+
+    case SYNTH_PARAM_PULSE_OFFSET:
+        ML_Oscillator::paramPulseOffset = (2.0f * value) - 1.0f;
+        Serial.printf("paramPulseOffset: %0.3f\n", ML_Oscillator::paramPulseOffset);
         break;
 
     default:

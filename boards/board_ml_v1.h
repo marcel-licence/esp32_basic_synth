@@ -45,6 +45,8 @@
 #ifndef BOARDS_BOARD_ML_V1_H_
 #define BOARDS_BOARD_ML_V1_H_
 
+#define MCP23_MODULE_ENABLED
+
 /*
  * MIDI In/Out
  */

@@ -142,21 +142,28 @@ struct midiControllerMapping edirolMapping[] =
     { 0x0, 0x10, "R1", NULL, Synth_SetParam, SYNTH_PARAM_DETUNE_1},
     { 0x1, 0x10, "R2", NULL, Synth_SetParam, SYNTH_PARAM_UNISON_2},
 #else
-    { 0x0, 0x10, "R1", NULL, Synth_SetParam, SYNTH_PARAM_WAVEFORM_1},
-    { 0x1, 0x10, "R2", NULL, Synth_SetParam, SYNTH_PARAM_WAVEFORM_2},
+    { 0x0, 0x10, "R1", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_MUL},
+    { 0x1, 0x10, "R2", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_LEVEL},
 #endif
-    { 0x2, 0x10, "R3", NULL, Delay_SetLength, 2},
+    //{ 0x2, 0x10, "R3", NULL, Delay_SetLength, 2},
+    { 0x2, 0x10, "R3", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_MOD_SPEED},
+
     { 0x3, 0x10, "R4", NULL, Delay_SetLevel, 3},
 
     { 0x4, 0x10, "R5", NULL, Delay_SetFeedback, 4},
     { 0x5, 0x10, "R6", NULL, Synth_SetParam, SYNTH_PARAM_MAIN_FILT_CUTOFF},
     { 0x6, 0x10, "R7", NULL, Synth_SetParam, SYNTH_PARAM_MAIN_FILT_RESO},
-    { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
+    //    { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
+    //{ 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
+    { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_WIDTH},
 
-    { 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
+    //    { 0x0, 0x12, "R9", NULL, Reverb_SetLevel, 0},
+    //{ 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_OFFSET},
+
 
     /* Central slider */
-    { 0x0, 0x13, "H1", NULL, NULL, 0},
+    //{ 0x0, 0x13, "H1", NULL, LedMatrix_SetBrighness, 0},
+    { 0x0, 0x13, "H1", NULL, Synth_SetParam, SYNTH_PARAM_PULSE_MOD_DEPTH},
 };
 
 struct midiMapping_s midiMapping =
