@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,16 +28,20 @@
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
  */
 
-/*
- * config.h
+/**
+ * @file config.h
+ * @author Marcel Licence
+ * @date 12.05.2021
+ *
+ * @brief This file contains the project configuration
+ *
+ * All definitions are visible in the entire project
  *
  * Put all your project settings here (defines, numbers, etc.)
  * configurations which are requiring knowledge of types etc.
  * shall be placed in z_config.ino (will be included at the end)
- *
- *  Created on: 12.05.2021
- *      Author: Marcel Licence
  */
+
 
 #ifndef CONFIG_H_
 #define CONFIG_H_
@@ -48,7 +50,6 @@
 //#define ESP32_AUDIO_KIT
 #define BOARD_ML_V1
 
-//#define FAKE_ORGAN
 #define SAMPLE_BUFFER_SIZE 48
 
 /* use following when you are using the esp32 audio kit v2.2 */

@@ -95,20 +95,18 @@ struct midiControllerMapping edirolMapping[] =
     { 0xe, 0x52, "start", NULL, NULL, 0},
     { 0xa, 0x52, "rec", NULL, NULL, 0},
 
-#ifdef FAKE_ORGAN
     /* upper row of buttons */
-    { 0x0, 0x50, "A1", NULL, SynthSelect, 0},
-    { 0x1, 0x50, "A2", NULL, SynthSelect, 1},
-    { 0x2, 0x50, "A3", NULL, SynthSelect, 2},
-    { 0x3, 0x50, "A4", NULL, SynthSelect, 3},
+    { 0x0, 0x50, "A1", NULL, NULL, 0},
+    { 0x1, 0x50, "A2", NULL, NULL, 1},
+    { 0x2, 0x50, "A3", NULL, NULL, 2},
+    { 0x3, 0x50, "A4", NULL, NULL, 3},
 
-    { 0x4, 0x50, "A5", NULL, SynthSelect, 4},
-    { 0x5, 0x50, "A6", NULL, SynthSelect, 5},
-    { 0x6, 0x50, "A7", NULL, SynthSelect, 6},
-    { 0x7, 0x50, "A8", NULL, SynthSelect, 7},
+    { 0x4, 0x50, "A5", NULL, NULL, 4},
+    { 0x5, 0x50, "A6", NULL, NULL, 5},
+    { 0x6, 0x50, "A7", NULL, NULL, 6},
+    { 0x7, 0x50, "A8", NULL, NULL, 7},
 
-    { 0x0, 0x53, "A9", NULL, SynthSelect, 8},
-#endif
+    { 0x0, 0x53, "A9", NULL, NULL, 8},
 
     /* lower row of buttons */
     { 0x0, 0x51, "B1", NULL, NULL, 0},
@@ -127,19 +125,6 @@ struct midiControllerMapping edirolMapping[] =
     { 0x0, 0x0b, "VolumePedal", NULL, NULL, 0},
 
     /* slider */
-#ifdef FAKE_ORGAN
-    { 0x0, 0x11, "S1", NULL, Synth_SetFader, 0},
-    { 0x1, 0x11, "S2", NULL, Synth_SetFader, 1},
-    { 0x2, 0x11, "S3", NULL, Synth_SetFader, 2},
-    { 0x3, 0x11, "S4", NULL, Synth_SetFader, 3},
-
-    { 0x4, 0x11, "S5", NULL, Synth_SetFader, 4},
-    { 0x5, 0x11, "S6", NULL, Synth_SetFader, 5},
-    { 0x6, 0x11, "S7", NULL, Synth_SetFader, 6},
-    { 0x7, 0x11, "S8", NULL, Synth_SetFader, 7},
-
-    { 0x1, 0x12, "S9", NULL, Synth_SetFader, 8},
-#else
     { 0x0, 0x11, "S1", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_ATTACK},
     { 0x1, 0x11, "S2", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_DECAY},
     { 0x2, 0x11, "S3", NULL, Synth_SetParam, SYNTH_PARAM_VEL_ENV_SUSTAIN},
@@ -151,7 +136,6 @@ struct midiControllerMapping edirolMapping[] =
     { 0x7, 0x11, "S8", NULL, Synth_SetParam, SYNTH_PARAM_FIL_ENV_RELEASE},
 
     { 0x1, 0x12, "S9", NULL, Synth_SetParam, 8},
-#endif
 
     /* rotary */
 #ifdef USE_UNISON
@@ -159,11 +143,7 @@ struct midiControllerMapping edirolMapping[] =
     { 0x1, 0x10, "R2", NULL, Synth_SetParam, SYNTH_PARAM_UNISON_2},
 #else
     { 0x0, 0x10, "R1", NULL, Synth_SetParam, SYNTH_PARAM_WAVEFORM_1},
-#ifdef FAKE_ORGAN
-    { 0x1, 0x10, "R2", NULL, Synth_SetPercRel, 0},
-#else
     { 0x1, 0x10, "R2", NULL, Synth_SetParam, SYNTH_PARAM_WAVEFORM_2},
-#endif
 #endif
     { 0x2, 0x10, "R3", NULL, Delay_SetLength, 2},
     { 0x3, 0x10, "R4", NULL, Delay_SetLevel, 3},
@@ -173,11 +153,8 @@ struct midiControllerMapping edirolMapping[] =
     { 0x6, 0x10, "R7", NULL, Synth_SetParam, SYNTH_PARAM_MAIN_FILT_RESO},
     { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
 
-#ifdef FAKE_ORGAN
-    { 0x0, 0x12, "R9", NULL, Reverb_SetLevel, 0},
-#else
     { 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
-#endif
+
     /* Central slider */
     { 0x0, 0x13, "H1", NULL, NULL, 0},
 };

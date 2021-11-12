@@ -53,7 +53,7 @@
 #define I2S_SDOUT   35
 #define I2S_SDIN    25
 #define I2S_LRCK    26
-#define I2S_BCLK    27
+#define I2S_BCLK    27	/* this could be also IO5 in some cases */
 #define I2S_MCLK    0
 
 #define IIC_CLK 32

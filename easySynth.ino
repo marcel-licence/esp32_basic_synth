@@ -90,10 +90,6 @@
 #define MAX_POLY_VOICE  11 /* max single voices, can use multiple osc */
 #endif
 
-#ifdef FAKE_ORGAN
-float drawbar[9] = {1, 1, 1, 1, 0, 0, 0, 0, 0};
-uint8_t dbOffset[9] = {0, 12 + 7, 12, 12 + 7 + 5, 12 + 7 + 5 + 7, 12 + 7 + 5 + 7 + 5, 12 + 7 + 5 + 7 + 5 + 4, 12 + 7 + 5 + 7 + 5 + 4 + 3};
-#endif
 
 /*
  * this is just a kind of magic to go through the waveforms
@@ -688,25 +684,6 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 
     osc_act += 1;
 
-#ifdef FAKE_ORGAN
-    for (int i = 0; i < 9; i++)
-    {
-        osc = getFreeOsc();
-        if (osc == NULL)
-        {
-            //Serial.printf("voc: %d, osc: %d\n", voc_act, osc_act);
-            return ;
-        }
-
-        osc->addVal = midi_note_to_add[note + dbOffset[i]];
-        osc->samplePos = (uint32_t)random(1 << 31); /* otherwise it sounds ... bad!? */
-        osc->waveForm = &selectedWaveForm2;
-        osc->dest = voice->lastSample;
-
-        osc_act += 1;
-    }
-#endif
-
 #ifdef USE_UNISON
 
     int8_t pan = 1;
@@ -779,8 +756,6 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     Filter_Process(&voice->lastSample[1], &voice->filterR);
     Filter_Process(&voice->lastSample[1], &voice->filterR);
     Filter_Process(&voice->lastSample[1], &voice->filterR);
-
-
 }
 
 inline void Synth_NoteOff(uint8_t ch, uint8_t note)
@@ -816,16 +791,6 @@ void Synth_PitchBend(uint8_t ch, float bend)
     pitchBendValue = bend;
     Serial.printf("pitchBendValue: %0.3f\n", pitchBendValue);
 }
-
-#ifdef FAKE_ORGAN
-void Synth_SetFader(uint8_t slider, float value)
-{
-    if ((slider < 0) && (slider < 9))
-    {
-        drawbar[slider] = value;
-    }
-}
-#endif
 
 void Synth_SetParam(uint8_t slider, float value)
 {
