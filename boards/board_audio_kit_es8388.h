@@ -66,6 +66,8 @@
 #if ES8388_CFG_I2C==1
 #define ES8388_PIN_SDA  18
 #define ES8388_PIN_SCL  23
+#define I2C_SDA 18 /* I2C shared with pin header */
+#define I2C_SCL 23 /* I2C shared with pin header */
 #elif ES8388_CFG_I2C==2
 #define ES8388_PIN_SDA  33
 #define ES8388_PIN_SCL  32
@@ -75,29 +77,29 @@
 #endif
 
 #if ES8388_CFG_I2S==1
-#define ES8388_PIN_DOUT   35
-#define ES8388_PIN_DIN    25
-#define ES8388_PIN_LRCK    26
-#define ES8388_PIN_SCLK    27
-#define ES8388_PIN_MCLK    0
+#define ES8388_PIN_DOUT 35
+#define ES8388_PIN_DIN  25
+#define ES8388_PIN_LRCK 26
+#define ES8388_PIN_SCLK 27
+#define ES8388_PIN_MCLK 0
 #elif ES8388_CFG_I2S==2
-#define ES8388_PIN_DOUT   35
-#define ES8388_PIN_DIN    25
-#define ES8388_PIN_LRCK    26
-#define ES8388_PIN_SCLK    5
-#define ES8388_PIN_MCLK    0
+#define ES8388_PIN_DOUT 35
+#define ES8388_PIN_DIN  25
+#define ES8388_PIN_LRCK 26
+#define ES8388_PIN_SCLK 5
+#define ES8388_PIN_MCLK 0
 #elif ES8388_CFG_I2S==3
-#define ES8388_PIN_DOUT   8
-#define ES8388_PIN_DIN    6
-#define ES8388_PIN_LRCK    7
-#define ES8388_PIN_SCLK    5
-#define ES8388_PIN_MCLK    1
+#define ES8388_PIN_DOUT 8
+#define ES8388_PIN_DIN  6
+#define ES8388_PIN_LRCK 7
+#define ES8388_PIN_SCLK 5
+#define ES8388_PIN_MCLK 1
 #elif ES8388_CFG_I2S==4
-#define ES8388_PIN_DOUT   35
-#define ES8388_PIN_DIN    26
-#define ES8388_PIN_LRCK    25
-#define ES8388_PIN_SCLK    5
-#define ES8388_PIN_MCLK    0
+#define ES8388_PIN_DOUT 35
+#define ES8388_PIN_DIN  26
+#define ES8388_PIN_LRCK 25
+#define ES8388_PIN_SCLK 5
+#define ES8388_PIN_MCLK 0
 #endif
 
 
@@ -117,9 +119,6 @@
 
 
 /* map selected pins to global */
-#define I2C_SDA ES8388_PIN_SDA
-#define I2C_SCL ES8388_PIN_SCL
-
 #define I2S_MCLK_PIN ES8388_PIN_MCLK
 #define I2S_BCLK_PIN ES8388_PIN_SCLK
 #define I2S_WCLK_PIN ES8388_PIN_LRCK

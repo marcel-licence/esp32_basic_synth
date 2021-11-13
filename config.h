@@ -52,6 +52,9 @@
 //#define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
 //#define BOARD_ESP32_DOIT /* activate this when using the DOIT ESP32 DEVKIT V1 board */
 
+/* can be used to pass line in through audio processing to output */
+//#define AUDIO_PASS_THROUGH
+
 /* this changes latency but also speed of processing */
 #define SAMPLE_BUFFER_SIZE 48
 
@@ -105,8 +108,9 @@
 #define SAMPLE_SIZE_16BIT
 #else
 #define SAMPLE_RATE 48000
-#define SAMPLE_SIZE_16BIT
+#define SAMPLE_SIZE_16BIT /* 32 bit seems not to work at the moment */
 #endif
 
 
 #endif /* CONFIG_H_ */
+

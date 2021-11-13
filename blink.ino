@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,9 +28,14 @@
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
  */
 
-/*
- * this file includes a simple blink task implementation
+/**
+ * @file blink.ino
+ * @author Marcel Licence
+ * @date 12.05.2021
+ *
+ * @brief  this file includes a simple blink task implementation
  */
+
 
 #ifdef BLINK_LED_PIN
 

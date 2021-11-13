@@ -141,7 +141,7 @@ void ac101_mclk_setup()
 void ac101_setup()
 {
     Serial.printf("Connect to AC101 codec... ");
-    while (not ac.begin(IIC_DATA, IIC_CLK))
+    while (not ac.begin(AC101_PIN_SDA, AC101_PIN_SCL))
     {
         Serial.printf("Failed!\n");
         delay(1000);

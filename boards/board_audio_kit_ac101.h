@@ -49,8 +49,8 @@
 #define LED_STRIP_PIN         12
 
 /* AC101 pins */
-#define IIC_DATA                    33
-#define IIC_CLK                     32
+#define AC101_PIN_SDA               33
+#define AC101_PIN_SCL               32
 
 #define IIS_SCLK                    27
 #define IIS_LCLK                    26
@@ -77,9 +77,6 @@
 
 
 /* map selected pins to global */
-#define I2C_SDA         IIC_DATA
-#define I2C_SCL         IIC_CLK
-
 #define I2S_BCLK_PIN    IIS_SCLK
 #define I2S_WCLK_PIN    IIS_LCLK
 #define I2S_DOUT_PIN    IIS_DSIN
