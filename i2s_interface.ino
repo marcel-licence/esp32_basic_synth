@@ -292,24 +292,6 @@ void i2s_read_stereo_samples_buff(float *fl_sample, float *fr_sample, const int 
 /*
  * i2s configuration
  */
-
-#ifdef ESP32_AUDIO_KIT
-
-#ifndef ES8388_ENABLED
-#define I2S_BCLK_PIN IIS_SCLK
-#define I2S_WCLK_PIN IIS_LCLK
-#define I2S_DOUT_PIN IIS_DSIN
-#define I2S_DIN_PIN IIS_DSOUT
-#else
-#define I2S_MCLK_PIN ES8388_PIN_MCLK
-#define I2S_BCLK_PIN ES8388_PIN_SCLK
-#define I2S_WCLK_PIN ES8388_PIN_LRCK
-#define I2S_DOUT_PIN ES8388_PIN_DIN
-#define I2S_DIN_PIN ES8388_PIN_DOUT
-#endif
-
-#endif
-
 i2s_config_t i2s_configuration =
 {
 #ifdef I2S_DIN_PIN
@@ -338,7 +320,7 @@ i2s_config_t i2s_configuration =
     .intr_alloc_flags = 0, // default interrupt priority
     .dma_buf_count = 8,
     .dma_buf_len = 64,
-#ifdef ES8388_ENABLED
+#ifdef I2S_USE_APLL
     .use_apll = true,
 #else
     .use_apll = false,

@@ -29,61 +29,44 @@
  */
 
 /**
- * @file board_audio_kit_ac101.h
- * @author Marcel Licence
- * @date 22.09.2021
- *
- * @brief Board description for the ESP32 Audio Kit with the AC101
- * @see   https://www.makerfabs.com/desfile/files/ESP32-A1S%20Product%20Specification.pdf
+* @file board_esp32_doit.h
+* @author Marcel Licence
+* @date 13.12.2021
+*
+* @brief Board description for a circuit using the DOIT ESP32 DEVKIT V1 board
+*/
+
+
+#ifndef BOARDS_BOARD_ESP32_DOIT_H_
+#define BOARDS_BOARD_ESP32_DOIT_H_
+
+
+/* on board led */
+#define BLINK_LED_PIN     2
+
+/*
+ * Define and connect your PINS to DAC here
  */
 
-
-#ifndef BOARDS_BOARD_AUDIO_KIT_AC101_H_
-#define BOARDS_BOARD_AUDIO_KIT_AC101_H_
-
-
-#define BLINK_LED_PIN     19 // IO19 -> D5
-
-//#define MIDI_RX_PIN 22 /* U2RRXD */
-#define MIDI_RX_PIN 21
-#define LED_STRIP_PIN         12
-
-/* AC101 pins */
-#define IIC_DATA                    33
-#define IIC_CLK                     32
-
-#define IIS_SCLK                    27
-#define IIS_LCLK                    26
-#define IIS_DSIN                    25
-#define IIS_DSOUT                   35
-/* #define IIS_MCLK 0 <- is not used here */
-
-#define GPIO_PA_EN                  GPIO_NUM_21
-#define GPIO_SEL_PA_EN              GPIO_SEL_21
-
-
-#define ESP32_AUDIO_KIT
-#define AC101_ENABLED
-
+#ifdef I2S_NODAC
+#define I2S_NODAC_OUT_PIN   22  /* noisy sound without DAC, add capacitor in series! */
+#else
+/*
+ * pins to connect a real DAC like PCM5201
+ */
+#define I2S_BCLK_PIN    25
+#define I2S_WCLK_PIN    27
+#define I2S_DOUT_PIN    26
+/* I2S_DIN_PIN is not used here */
+#endif
 
 #ifdef ADC_TO_MIDI_ENABLED
 #define ADC_INPUTS  8
-#define ADC_MUL_S0_PIN  23
-#define ADC_MUL_S1_PIN  18
-#define ADC_MUL_S2_PIN  14
-#define ADC_MUL_S3_PIN  5    /* <- not used, this has not been tested */
+#define ADC_MUL_S0_PIN  33
+#define ADC_MUL_S1_PIN  32
+#define ADC_MUL_S2_PIN  13
 #define ADC_MUL_SIG_PIN 12
 #endif
 
 
-/* map selected pins to global */
-#define I2C_SDA         IIC_DATA
-#define I2C_SCL         IIC_CLK
-
-#define I2S_BCLK_PIN    IIS_SCLK
-#define I2S_WCLK_PIN    IIS_LCLK
-#define I2S_DOUT_PIN    IIS_DSIN
-#define I2S_DIN_PIN     IIS_DSOUT
-
-
-#endif /* BOARDS_BOARD_AUDIO_KIT_AC101_H_ */
+#endif /* BOARDS_BOARD_ESP32_DOIT_H_ */

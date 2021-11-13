@@ -48,22 +48,13 @@
 
 #ifdef ESP32_AUDIO_KIT
 
+#ifdef AC101_ENABLED
 #include "AC101.h" /* only compatible with forked repo: https://github.com/marcel-licence/AC101 */
+#endif
+
 
 //#define BUTTON_DEBUG_MSG
 
-
-/* AC101 pins */
-#define IIS_SCLK                    27
-#define IIS_LCLK                    26
-#define IIS_DSIN                    25
-#define IIS_DSOUT                   35
-
-#define IIC_CLK                     32
-#define IIC_DATA                    33
-
-#define GPIO_PA_EN                  GPIO_NUM_21
-#define GPIO_SEL_PA_EN              GPIO_SEL_21
 
 
 #define PIN_LED4    (22)
@@ -107,7 +98,9 @@ uint32_t keyMax[7] = {4095 + 32, 0 + 32, 525 + 32, 1006 + 32, 1374 + 32, 1570 + 
 #define MCLK_CH 0
 #define PWM_BIT 1
 
+#ifdef AC101_ENABLED
 static AC101 ac;
+#endif
 
 /* actually only supporting 16 bit */
 #define SAMPLE_SIZE_16BIT
@@ -127,6 +120,7 @@ static AC101 ac;
 typedef void(*audioKitButtonCb)(uint8_t, uint8_t);
 extern audioKitButtonCb audioKitButtonCallback;
 
+#ifdef AC101_ENABLED
 /*
  * this function could be used to set up the masterclock
  * it is not necessary to use the ac101
@@ -195,6 +189,7 @@ void ac101_setup()
     digitalWrite(GPIO_PA_EN, HIGH);
 #endif
 }
+#endif /* #ifdef AC101_ENABLED */
 
 /*
  * pullup required to enable reading the buttons (buttons will connect them to ground if pressed)
@@ -214,6 +209,7 @@ void button_setup()
 #endif
 }
 
+#ifdef AC101_ENABLED
 /*
  * selects the microphone as audio source
  * handle with care: mic is very sensitive and might cause feedback using amp!!!
@@ -230,6 +226,7 @@ void ac101_setSourceLine(void)
 {
     ac.SetLineSource();
 }
+#endif /* #ifdef AC101_ENABLED */
 
 /*
  * very bad implementation checking the button state

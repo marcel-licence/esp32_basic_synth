@@ -47,14 +47,13 @@
 #define CONFIG_H_
 
 
-//#define ESP32_AUDIO_KIT
-#define BOARD_ML_V1
+#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
+//#define BOARD_ESP32_AUDIO_KIT_AC101 /* activate this when using the ESP32 Audio Kit v2.2 with the AC101 codec */
+//#define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
+//#define BOARD_ESP32_DOIT /* activate this when using the DOIT ESP32 DEVKIT V1 board */
 
+/* this changes latency but also speed of processing */
 #define SAMPLE_BUFFER_SIZE 48
-
-/* use following when you are using the esp32 audio kit v2.2 */
-//#define ESP32_AUDIO_KIT /* project has not been tested on other hardware, modify on own risk */
-//#define ES8388_ENABLED /* use this if the Audio Kit is equipped with ES8388 instead of the AC101 */
 
 /* this will force using const velocity for all notes, remove this to get dynamic velocity */
 #define MIDI_USE_CONST_VELOCITY
@@ -69,86 +68,38 @@
 /* activate MIDI via USB */
 //#define MIDI_VIA_USB_ENABLED
 
-
 /*
  * keep in mind that activation of adc will also change your controls on startup!
  */
 //#define ADC_TO_MIDI_ENABLED /* this will enable the adc module */
 #define ADC_TO_MIDI_LOOKUP_SIZE 8 /* should match ADC_INPUTS */
 
-
-#ifdef ESP32_AUDIO_KIT
-#include "./boards/board_audio_kit_ac101.h"
-//#include "./boards/board_audio_kit_es8388.h"
-
-/* on board led */
-#define BLINK_LED_PIN     19 // IO19 -> D5
-
-#ifdef ADC_TO_MIDI_ENABLED
-#define ADC_INPUTS  8
-#define ADC_MUL_S0_PIN  23
-#define ADC_MUL_S1_PIN  18
-#define ADC_MUL_S2_PIN  14
-#define ADC_MUL_S3_PIN  5    /* <- not used, this has not been tested */
-#define ADC_MUL_SIG_PIN 12
-#endif
-
-#ifdef ES8388_ENABLED
-/* i2c shared with codec */
-#define I2C_SDA 18
-#define I2C_SCL 23
-#endif
-
-#elif (defined BOARD_ML_V1)
+/*
+ * include the board configuration
+ * there you will find the most hardware depending pin settings
+ */
+#ifdef BOARD_ML_V1
 #include "./boards/board_ml_v1.h"
-
-#else /* ESP32_AUDIO_KIT */
-
-/* on board led */
-#define BLINK_LED_PIN     2
-
-/*
- * Define and connect your PINS to DAC here
- */
-
-#ifdef I2S_NODAC
-#define I2S_NODAC_OUT_PIN   22  /* noisy sound without DAC, add capacitor in series! */
+#elif (defined BOARD_ESP32_AUDIO_KIT_AC101)
+#include "./boards/board_audio_kit_ac101.h"
+#elif (defined BOARD_ESP32_AUDIO_KIT_ES8388)
+#include "./boards/board_audio_kit_es8388.h"
+#elif (defined BOARD_ESP32_DOIT)
+#include "./boards/board_esp32_doit.h"
 #else
-/*
- * pins to connect a real DAC like PCM5201
- */
-#define I2S_BCLK_PIN    25
-#define I2S_WCLK_PIN    27
-#define I2S_DOUT_PIN    26
-#endif
-
-#ifdef ADC_TO_MIDI_ENABLED
-#define ADC_INPUTS  8
-#define ADC_MUL_S0_PIN  33
-#define ADC_MUL_S1_PIN  32
-#define ADC_MUL_S2_PIN  13
-#define ADC_MUL_SIG_PIN 12
-#endif
-
-#endif /* ESP32_AUDIO_KIT */
+/* there is room left for other configurations */
 
 /*
  * DIN MIDI Pinout
  */
-#ifdef ESP32_AUDIO_KIT
-#define MIDI_RX_PIN 22 /* U2RRXD */
-#elif (defined BOARD_ML_V1)
-/* defined by board */
-#else
 #define MIDI_RX_PIN 16 /* U2RRXD */
-#define TXD2 17
-#endif
+#define MIDI_TX_PIN 17
 
+#endif
 
 /*
  * You can modify the sample rate as you want
  */
-
 #ifdef ESP32_AUDIO_KIT
 #define SAMPLE_RATE 44100
 #define SAMPLE_SIZE_16BIT
@@ -156,5 +107,6 @@
 #define SAMPLE_RATE 48000
 #define SAMPLE_SIZE_16BIT
 #endif
+
 
 #endif /* CONFIG_H_ */

@@ -34,6 +34,15 @@
  * @date 22.09.2021
  *
  * @brief Board description for the ESP32 Audio Kit with the ES8388
+ *
+ * ES8388_CFG_I2C can be set to 1..3 to match different datasheets
+ * ES8388_CFG_I2S can be set to 1..3 to match different datasheets
+ *
+ * 2 - coveres pinout shown in https://www.makerfabs.com/desfile/files/ESP32-A1S%20Product%20Specification.pdf
+ * 3 - coveres pinout shown in https://docs.ai-thinker.com/_media/esp32-a1s_v2.3_specification.pdf
+ * 4 - unknown origin
+ *
+ * Tested configuration: I2C: 1, I2S: 4
  */
 
 
@@ -41,24 +50,81 @@
 #define BOARDS_BOARD_AUDIO_KIT_ES8388_H_
 
 
-#define MIDI_RX_PIN 19
+#define ES8388_CFG_I2C  1
+#define ES8388_CFG_I2S  4
+
+
+/* on board led */
+#define BLINK_LED_PIN     19 // IO19 -> D5
+
+
+//#define MIDI_RX_PIN 22 /* U2RRXD */
+//#define MIDI_RX_PIN 19
+#define MIDI_RX_PIN 23 /* D5 LED will blink then */
 #define LED_STRIP_PIN         12
 
-#define I2C_SDA 18
-#define I2C_SCL 23
+#if ES8388_CFG_I2C==1
+#define ES8388_PIN_SDA  18
+#define ES8388_PIN_SCL  23
+#elif ES8388_CFG_I2C==2
+#define ES8388_PIN_SDA  33
+#define ES8388_PIN_SCL  32
+#elif ES8388_CFG_I2C==2
+#define ES8388_PIN_SDA  27
+#define ES8388_PIN_SCL  28
+#endif
 
-#define IIC_CLK                     32
-#define IIC_DATA                    33
+#if ES8388_CFG_I2S==1
+#define ES8388_PIN_DOUT   35
+#define ES8388_PIN_DIN    25
+#define ES8388_PIN_LRCK    26
+#define ES8388_PIN_SCLK    27
+#define ES8388_PIN_MCLK    0
+#elif ES8388_CFG_I2S==2
+#define ES8388_PIN_DOUT   35
+#define ES8388_PIN_DIN    25
+#define ES8388_PIN_LRCK    26
+#define ES8388_PIN_SCLK    5
+#define ES8388_PIN_MCLK    0
+#elif ES8388_CFG_I2S==3
+#define ES8388_PIN_DOUT   8
+#define ES8388_PIN_DIN    6
+#define ES8388_PIN_LRCK    7
+#define ES8388_PIN_SCLK    5
+#define ES8388_PIN_MCLK    1
+#elif ES8388_CFG_I2S==4
+#define ES8388_PIN_DOUT   35
+#define ES8388_PIN_DIN    26
+#define ES8388_PIN_LRCK    25
+#define ES8388_PIN_SCLK    5
+#define ES8388_PIN_MCLK    0
+#endif
 
-#define I2S_SDOUT   35
-#define I2S_SDIN    25
-#define I2S_LRCK    26
-#define I2S_BCLK    27	/* this could be also IO5 in some cases */
-#define I2S_MCLK    0
 
-#define IIC_CLK 32
-#define IIC_DATA 33
-
+#define ESP32_AUDIO_KIT
 #define ES8388_ENABLED
+#define I2S_USE_APLL
+
+
+#ifdef ADC_TO_MIDI_ENABLED
+#define ADC_INPUTS  8
+#define ADC_MUL_S0_PIN  23
+#define ADC_MUL_S1_PIN  18
+#define ADC_MUL_S2_PIN  14
+#define ADC_MUL_S3_PIN  5    /* <- not used, this has not been tested */
+#define ADC_MUL_SIG_PIN 12
+#endif
+
+
+/* map selected pins to global */
+#define I2C_SDA ES8388_PIN_SDA
+#define I2C_SCL ES8388_PIN_SCL
+
+#define I2S_MCLK_PIN ES8388_PIN_MCLK
+#define I2S_BCLK_PIN ES8388_PIN_SCLK
+#define I2S_WCLK_PIN ES8388_PIN_LRCK
+#define I2S_DOUT_PIN ES8388_PIN_DIN
+#define I2S_DIN_PIN ES8388_PIN_DOUT
+
 
 #endif /* BOARDS_BOARD_AUDIO_KIT_ES8388_H_ */

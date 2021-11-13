@@ -185,7 +185,7 @@ void Core0TaskLoop()
     UsbMidi_Loop();
 #endif
 
-#ifdef BOARD_ML_V1
+#ifdef MCP23_MODULE_ENABLED
     MCP23_Loop();
 #endif
 }
