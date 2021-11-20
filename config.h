@@ -77,6 +77,9 @@
 //#define ADC_TO_MIDI_ENABLED /* this will enable the adc module */
 #define ADC_TO_MIDI_LOOKUP_SIZE 8 /* should match ADC_INPUTS */
 
+#define ARP_MODULE_ENABLED /* allow using arp module */
+#define MIDI_CTRL_ENABLED /* used for virtual split point */
+
 /*
  * include the board configuration
  * there you will find the most hardware depending pin settings

@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -237,6 +235,10 @@ void loop()
         loop_cnt_1hz = 0;
     }
 
+#ifdef ARP_MODULE_ENABLED
+    Arp_Process(1);
+#endif
+
     if (i2s_write_stereo_samples(&fl_sample, &fr_sample))
     {
         /* nothing for here */
@@ -268,7 +270,7 @@ void loop()
 void  ScanI2C(void)
 {
 
-    Wire.begin(21, 22);
+    Wire.begin(I2C_SDA, I2C_SCL);
 
     byte error, address;
     int nDevices;
