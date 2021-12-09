@@ -154,7 +154,7 @@ inline void Midi_PitchBend(uint8_t ch, uint16_t bend)
 /*
  * function will be called when a short message has been received over midi
  */
-inline void Midi_HandleShortMsg(uint8_t *data, uint8_t cable)
+inline void Midi_HandleShortMsg(uint8_t *data, uint8_t cable __attribute__((unused)))
 {
     uint8_t ch = data[0] & 0x0F;
 

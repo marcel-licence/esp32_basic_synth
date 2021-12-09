@@ -96,7 +96,6 @@ extern struct usbMidiMapping_s usbMidiMapping; /* definition in z_config.ino */
 void UsbMidi_Setup()
 {
     vid = pid = 0;
-    Serial.begin(115200);
     Serial.println("Hello now we can start\n");
 
     if (Usb.Init() == -1)
@@ -266,6 +265,8 @@ uint8_t MIDI_handleMsg(uint8_t *data, uint16_t len, uint8_t cable)
         Serial.printf("0x%02x ", data[i]);
     }
     Serial.printf("\n");
+
+    return 0;
 }
 
 /* process data now */
@@ -296,7 +297,7 @@ static void UsbMidi_Poll()
         Serial.printf("VID: %04x, PID: %04x\n", vid, pid);
     }
 
-    if (Midi.RecvData(&rcvd,  bufMidi) == 0)
+    if (Midi.RecvData(&rcvd,  bufMidi) == 0) /* use while instead of if to ensure the data will be collected completely instead of message by message */
     {
         if (rcvd == 0)
         {
