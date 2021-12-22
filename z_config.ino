@@ -101,12 +101,12 @@ struct midiControllerMapping edirolMapping[] =
     { 0x2, 0x50, "A3", NULL, NULL, 2},
     { 0x3, 0x50, "A4", NULL, NULL, 3},
 
-    { 0x4, 0x50, "A5", NULL, NULL, 4},
-    { 0x5, 0x50, "A6", NULL, NULL, 5},
-    { 0x6, 0x50, "A7", NULL, NULL, 6},
-    { 0x7, 0x50, "A8", NULL, NULL, 7},
+    { 0x4, 0x50, "A5", NULL, Synth_SetCurCh, 0},
+    { 0x5, 0x50, "A6", NULL, Synth_SetCurCh, 1},
+    { 0x6, 0x50, "A7", NULL, MidiCtrl_TransposeUp, 0},
+    { 0x7, 0x50, "A8", NULL, MidiCtrl_TransposeDown, 0},
 
-    { 0x0, 0x53, "A9", NULL, NULL, 8},
+    { 0x0, 0x53, "A9", NULL, Synth_ToggleMono, 0},
 
     /* lower row of buttons */
 #ifdef ARP_MODULE_ENABLED
@@ -165,7 +165,8 @@ struct midiControllerMapping edirolMapping[] =
     { 0x4, 0x10, "R5", NULL, Delay_SetFeedback, 4},
     { 0x5, 0x10, "R6", NULL, Synth_SetParam, SYNTH_PARAM_MAIN_FILT_CUTOFF},
     { 0x6, 0x10, "R7", NULL, Synth_SetParam, SYNTH_PARAM_MAIN_FILT_RESO},
-    { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
+    //{ 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
+    { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_PORT_TIME},
 
     { 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
 

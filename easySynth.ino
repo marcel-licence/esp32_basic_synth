@@ -1,6 +1,4 @@
 /*
- * The GNU GENERAL PUBLIC LICENSE (GNU GPLv3)
- *
  * Copyright (c) 2021 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Dieses Programm ist Freie Software: Sie können es unter den Bedingungen
+ * Dieses Programm ist Freie Software: Sie kï¿½nnen es unter den Bedingungen
  * der GNU General Public License, wie von der Free Software Foundation,
  * Version 3 der Lizenz oder (nach Ihrer Wahl) jeder neueren
- * veröffentlichten Version, weiter verteilen und/oder modifizieren.
+ * verï¿½ffentlichten Version, weiter verteilen und/oder modifizieren.
  *
- * Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird, jedoch
- * OHNE JEDE GEWÄHR,; sogar ohne die implizite
- * Gewähr der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
- * Siehe die GNU General Public License für weitere Einzelheiten.
+ * Dieses Programm wird in der Hoffnung bereitgestellt, dass es nï¿½tzlich sein wird, jedoch
+ * OHNE JEDE GEWï¿½HR,; sogar ohne die implizite
+ * Gewï¿½hr der MARKTFï¿½HIGKEIT oder EIGNUNG Fï¿½R EINEN BESTIMMTEN ZWECK.
+ * Siehe die GNU General Public License fï¿½r weitere Einzelheiten.
  *
  * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
@@ -39,6 +37,7 @@
  *
  */
 
+
 #ifdef __CDT_PARSER__
 #include "cdt.h"
 #endif
@@ -52,6 +51,7 @@
  */
 //#define USE_UNISON
 
+#define CHANNEL_MAX 2
 
 /*
  * Param indices for Synth_SetParam function
@@ -76,6 +76,7 @@
 #define SYNTH_PARAM_VOICE_FILT_RESO     12
 #define SYNTH_PARAM_VOICE_NOISE_LEVEL   13
 
+#define SYNTH_PARAM_VOICE_PORT_TIME		14
 
 /*
  * Following defines can be changed for different puprposes
@@ -90,10 +91,6 @@
 #define MAX_POLY_VOICE  11 /* max single voices, can use multiple osc */
 #endif
 
-#ifdef FAKE_ORGAN
-float drawbar[9] = {1, 1, 1, 1, 0, 0, 0, 0, 0};
-uint8_t dbOffset[9] = {0, 12 + 7, 12, 12 + 7 + 5, 12 + 7 + 5 + 7, 12 + 7 + 5 + 7 + 5, 12 + 7 + 5 + 7 + 5 + 4, 12 + 7 + 5 + 7 + 5 + 4 + 3};
-#endif
 
 /*
  * this is just a kind of magic to go through the waveforms
@@ -165,11 +162,9 @@ struct filterProcT
 struct filterCoeffT filterGlobalC;
 struct filterProcT mainFilterL, mainFilterR;
 
-float modulationDepth = 0.0f;
-float modulationSpeed = 5.0f;
-float modulationPitch = 1.0f;
-float pitchBendValue = 0.0f;
-float pitchMultiplier = 1.0f;
+
+#define NOTE_STACK_MAX  8
+
 
 struct channelSetting_s
 {
@@ -188,6 +183,26 @@ struct channelSetting_s
 
     struct adsrT adsr_vol;
     struct adsrT adsr_fil;
+
+    /* modulation */
+    float modulationDepth;
+    float modulationSpeed;
+    float modulationPitch;
+
+    /* pitchbend */
+    float pitchBendValue;
+    float pitchMultiplier;
+
+    /* mono mode variables */
+    bool mono;
+
+    float portAdd;
+    float port;
+    float noteA;
+    float noteB;
+
+    uint32_t noteCnt;
+    uint32_t noteStack[NOTE_STACK_MAX];
 };
 
 static struct channelSetting_s chCfg[16];
@@ -201,6 +216,7 @@ struct oscillatorT
     uint32_t addVal;
     float pan_l;
     float pan_r;
+    struct channelSetting_s *cfg;
 };
 
 float voiceSink[2];
@@ -291,6 +307,7 @@ void Synth_Init()
         oscillatorT *osc = &oscPlayer[i];
         osc->waveForm = &silence;
         osc->dest = voiceSink;
+        osc->cfg = &chCfg[0];
     }
 
     /*
@@ -372,6 +389,22 @@ static void Synth_ChannelSettingInit(struct channelSetting_s *setting)
 
     memcpy(&setting->adsr_vol, &adsr_vol_def, sizeof(adsr_vol_def));
     memcpy(&setting->adsr_fil, &adsr_fil_def, sizeof(adsr_vol_def));
+
+    setting->modulationDepth = 0.0f;
+    setting->modulationSpeed = 5.0f;
+    setting->modulationPitch = 1.0f;
+
+    setting->pitchBendValue = 0.0f;
+    setting->pitchMultiplier = 1.0f;
+
+    setting->mono = true;
+    setting->portAdd = 0.01f; /*!< speed of portamento */
+    setting->port = 1.0f;
+    setting->noteA = 0;
+    setting->noteB = 0;
+
+    setting->noteCnt = 0;
+    /* setting->noteStack[NOTE_STACK_MAX]; can be left uninitialized */
 }
 
 /*
@@ -498,10 +531,10 @@ float SineNorm(float alpha_div2pi)
 }
 
 inline
-float GetModulation(void)
+float GetModulation(uint8_t ch)
 {
-    float modSpeed = modulationSpeed;
-    return modulationDepth * modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f)));
+    float modSpeed = chCfg[ch].modulationSpeed;
+    return chCfg[ch].modulationDepth * chCfg[ch].modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f)));
 }
 
 static float out_l, out_r;
@@ -510,6 +543,30 @@ static uint32_t count = 0;
 //[[gnu::noinline, gnu::optimize ("fast-math")]]
 inline void Synth_Process(float *left, float *right)
 {
+    /*
+     * update pitch bending / modulation
+     */
+    if (count % 64 == 0)
+    {
+
+        for (int i = 0; i < CHANNEL_MAX; i++)
+        {
+            float modulation = GetModulation(i) ;
+
+            chCfg[i].port += chCfg[i].portAdd; /* active portamento */
+            chCfg[i].port = chCfg[i].port > 1.0f ? 1.0f : chCfg[i].port; /* limit value to max of 1.0f */
+
+            float portVal = (((float)(chCfg[i].noteA)) * (1.0f - chCfg[i].port) + ((float)(chCfg[i].noteB)) * chCfg[i].port);
+
+            float pitchVar = chCfg[i].pitchBendValue + modulation + portVal;
+#if 0
+            static float lastPitchVar = 0;
+#endif
+            chCfg[i].pitchMultiplier = pow(2.0f, pitchVar / 12.0f);
+        }
+    }
+
+
     /* gerenate a noise signal */
     float noise_signal = ((random(1024) / 512.0f) - 1.0f);
 
@@ -528,15 +585,7 @@ inline void Synth_Process(float *left, float *right)
     voiceSink[0] = 0;
     voiceSink[1] = 0;
 
-    /*
-     * update pitch bending / modulation
-     */
-    if (count % 64 == 0)
-    {
-        float pitchVar = pitchBendValue + GetModulation();
-        //static float lastPitchVar = 0;
-        pitchMultiplier = pow(2.0f, pitchVar / 12.0f);
-    }
+
 
     /*
      * oscillator processing -> mix to voice
@@ -545,7 +594,7 @@ inline void Synth_Process(float *left, float *right)
     {
         oscillatorT *osc = &oscPlayer[i];
         {
-            osc->samplePos += (uint32_t)(pitchMultiplier * ((float)osc->addVal));
+            osc->samplePos += (uint32_t)(osc->cfg->pitchMultiplier * ((float)osc->addVal));
             float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
             osc->dest[0] += osc->pan_l * sig;
             osc->dest[1] += osc->pan_r * sig;
@@ -653,6 +702,36 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     struct notePlayerT *voice = getFreeVoice();
     struct oscillatorT *osc = getFreeOsc();
 
+    /* put note onto stack */
+    if (chCfg[ch].mono)
+    {
+        if (chCfg[ch].noteCnt < (NOTE_STACK_MAX - 1))
+        {
+            chCfg[ch].noteStack[chCfg[ch].noteCnt] = note;
+            chCfg[ch].noteCnt++;
+            //Status_ValueChangedIntArr("noteCnt", chCfg[ch].noteCnt, ch);
+        }
+
+        if (chCfg[ch].noteCnt > 1)
+        {
+            for (int i = 0; i < MAX_POLY_VOICE ; i++)
+            {
+                if ((voicePlayer[i].active) && (voicePlayer[i].midiCh == ch))
+                {
+                    float diff = note - voicePlayer[i].midiNote;
+
+                    voicePlayer[i].cfg->noteA = voicePlayer[i].cfg->port * ((float)voicePlayer[i].cfg->noteB) + (1.0f - voicePlayer[i].cfg->port) * voicePlayer[i].cfg->noteA;
+                    voicePlayer[i].cfg->port = 0.0f;
+
+                    voicePlayer[i].cfg->noteB += diff;
+                    voicePlayer[i].midiNote = note;
+
+                    return;
+                }
+            }
+        }
+    }
+
     /*
      * No free voice found, return otherwise crash xD
      */
@@ -674,6 +753,10 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     voice->lastSample[1] = 0.0f;
     voice->control_sign = 0.0f;
 
+    /* default values to avoid portamento */
+    voice->cfg->port = 1.0f;
+    voice->cfg->noteB = 0;
+
 #if 1
     voice->f_phase = attack;
     if (voice->cfg->adsr_fil.a == 1)
@@ -692,6 +775,7 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     voice->active = true;
     voice->phase = attack;
 
+    /* update all values to avoid audible artifacts */
     ADSR_Process(&voice->cfg->adsr_vol, &voice->control_sign, &voice->phase);
     ADSR_Process(&voice->cfg->adsr_fil, &voice->f_control_sign, &voice->f_phase);
 
@@ -720,6 +804,8 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
     osc->dest = voice->lastSample;
     osc->pan_l = 1;
     osc->pan_r = 1;
+
+    osc->cfg = &chCfg[ch];
 
     osc_act += 1;
 
@@ -763,6 +849,9 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
             osc->pan_r = 1;
         }
         pan = -pan; /* make a stereo sound by putting the oscillator left/right */
+
+        osc->cfg = &chCfg[ch];
+
         osc_act += 1;
     }
 #else
@@ -777,6 +866,8 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
             osc->dest = voice->lastSample;
             osc->pan_l = 1;
             osc->pan_r = 1;
+
+            osc->cfg = &chCfg[ch];
 
             osc_act += 1;
         }
@@ -799,36 +890,72 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 
 inline void Synth_NoteOff(uint8_t ch, uint8_t note)
 {
+    for (int j = 0; j < chCfg[ch].noteCnt; j++)
+    {
+        if (chCfg[ch].noteStack[j] == note)
+        {
+            for (int k = j; k < NOTE_STACK_MAX - 1; k++)
+            {
+                chCfg[ch].noteStack[k] = chCfg[ch].noteStack[k + 1];
+            }
+            chCfg[ch].noteCnt = (chCfg[ch].noteCnt > 0) ? (chCfg[ch].noteCnt - 1) : 0;
+            Status_ValueChangedIntArr("noteCnt-", chCfg[ch].noteCnt, ch);
+        }
+    }
+
     for (int i = 0; i < MAX_POLY_VOICE ; i++)
     {
         if ((voicePlayer[i].active) && (voicePlayer[i].midiNote == note) && (voicePlayer[i].midiCh == ch))
         {
-            voicePlayer[i].phase = release;
+            if ((voicePlayer[i].cfg->noteCnt > 0) && (voicePlayer[i].cfg->mono))
+            {
+                uint8_t midiNote = voicePlayer[i].cfg->noteStack[voicePlayer[i].cfg->noteCnt - 1];
+
+                float diff = midiNote - voicePlayer[i].midiNote;
+
+                voicePlayer[i].cfg->noteA = voicePlayer[i].cfg->port * ((float)voicePlayer[i].cfg->noteB) + (1.0f - voicePlayer[i].cfg->port) * voicePlayer[i].cfg->noteA;
+                voicePlayer[i].cfg->port = 0.0f;
+
+                voicePlayer[i].cfg->noteB += diff;
+                voicePlayer[i].midiNote = midiNote;
+            }
+            else
+            {
+                voicePlayer[i].phase = release;
+            }
         }
     }
 }
 
 void Synth_ModulationWheel(uint8_t ch, float value)
 {
-    modulationDepth = value;
+    chCfg[ch].modulationDepth = value;
 }
 
 void Synth_ModulationSpeed(uint8_t ch, float value)
 {
-    modulationSpeed = value * 10;
+    chCfg[ch].modulationSpeed = value * 10;
     //Status_ValueChangedFloat("ModulationSpeed", modulationSpeed);
 }
 
 void Synth_ModulationPitch(uint8_t ch, float value)
 {
-    modulationPitch = value * 5;
+    chCfg[ch].modulationPitch = value * 5;
     //Status_ValueChangedFloat("ModulationDepth", modulationPitch);
 }
 
 void Synth_PitchBend(uint8_t ch, float bend)
 {
-    pitchBendValue = bend;
-    Serial.printf("pitchBendValue: %0.3f\n", pitchBendValue);
+    chCfg[ch].pitchBendValue = bend;
+    //Serial.printf("pitchBendValue: %0.3f\n", chCfg[ch].pitchBendValue);
+}
+
+void Synth_PortTime(float value)
+{
+    float min = 0.02f; /* 1/(0.02 * 1000) -> 0.05s */
+    float max = 0.0002f; /* 1/(0.0002 * 1000) -> 5s */
+
+    curChCfg->portAdd = (pow(2.0f, value) - 1.0f) * (max - min) + min;
 }
 
 void Synth_SetCurCh(uint8_t ch, float value)
@@ -840,6 +967,15 @@ void Synth_SetCurCh(uint8_t ch, float value)
             curChCfg = &chCfg[ch];
             Status_ValueChangedInt("Current ch", ch);
         }
+    }
+}
+
+void Synth_ToggleMono(uint8_t ch, float value)
+{
+    if (value > 0)
+    {
+        curChCfg->mono = !curChCfg->mono;
+        Status_LogMessage(curChCfg->mono ? "Mono" : "Poly");
     }
 }
 
@@ -943,6 +1079,11 @@ void Synth_SetParam(uint8_t slider, float value)
     case SYNTH_PARAM_VOICE_NOISE_LEVEL:
         curChCfg->soundNoiseLevel = value;
         Serial.printf("voice noise level: %0.3f\n", curChCfg->soundNoiseLevel);
+        break;
+
+    case SYNTH_PARAM_VOICE_PORT_TIME:
+        curChCfg->portAdd = value * value * value * value;
+        Serial.printf("voice port time: %0.3f\n", curChCfg->portAdd);
         break;
 
     default:

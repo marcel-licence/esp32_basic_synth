@@ -224,16 +224,14 @@ inline void Loop_1Hz(void)
  * - all is done in a blocking context
  * - do not block the loop otherwise you will get problems with your audio
  */
-float fl_sample, fr_sample;
+static float fl_sample[SAMPLE_BUFFER_SIZE];
+static float fr_sample[SAMPLE_BUFFER_SIZE];
 
 void loop()
 {
     static uint32_t loop_cnt_1hz;
-    static uint8_t loop_count_u8 = 0;
 
-    loop_count_u8++;
-
-    loop_cnt_1hz ++;
+    loop_cnt_1hz += SAMPLE_BUFFER_SIZE;
     if (loop_cnt_1hz >= SAMPLE_RATE)
     {
         Loop_1Hz();
@@ -241,24 +239,27 @@ void loop()
     }
 
 #ifdef ARP_MODULE_ENABLED
-    Arp_Process(1);
+    Arp_Process(SAMPLE_BUFFER_SIZE);
 #endif
 
-    if (i2s_write_stereo_samples(&fl_sample, &fr_sample))
+    if (i2s_write_stereo_samples_buff(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE))
     {
         /* nothing for here */
     }
-    Synth_Process(&fl_sample, &fr_sample);
-    /*
-     * process delay line
-     */
-    Delay_Process(&fl_sample, &fr_sample);
+
+    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
+    {
+        Synth_Process(&fl_sample[i], &fr_sample[i]);
+        /*
+         * process delay line
+         */
+        Delay_Process(&fl_sample[i], &fr_sample[i]);
+    }
 
     /*
      * Midi does not required to be checked after every processed sample
      * - we divide our operation by 8
      */
-    if (loop_count_u8 % 8 == 0)
     {
         Midi_Process();
 #ifdef MIDI_VIA_USB_ENABLED
