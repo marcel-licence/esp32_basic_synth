@@ -48,9 +48,11 @@
 /*
  * MIDI In/Out
  */
-#define MIDI_RX_PIN 35
-#define MIDI_TX_PIN 34 /* only available on header */
+#define MIDI_PORT2_ACTIVE
+#define MIDI_RX2_PIN 35
+#define MIDI_TX2_PIN 34 /* only available on header */
 
+#define MIDI_SERIAL2_BAUDRATE 31250
 
 /*
  * I2S Audio In/Out

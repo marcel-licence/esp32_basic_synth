@@ -78,6 +78,7 @@
 #define ADC_TO_MIDI_LOOKUP_SIZE 8 /* should match ADC_INPUTS */
 
 #define ARP_MODULE_ENABLED /* allow using arp module */
+#define MIDI_SYNC_MASTER /* turn this off to use external midi clock signal */
 #define MIDI_CTRL_ENABLED /* used for virtual split point */
 
 /*
@@ -98,8 +99,9 @@
 /*
  * DIN MIDI Pinout
  */
-#define MIDI_RX_PIN 16 /* U2RRXD */
-#define MIDI_TX_PIN 17
+#define MIDI_PORT2_ACTIVE
+#define MIDI_RX2_PIN 16 /* U2RRXD */
+#define MIDI_TX2_PIN 17
 
 #endif
 

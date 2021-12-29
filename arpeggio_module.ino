@@ -172,6 +172,13 @@ void Arp_Process(uint64_t elapsed_ms)
     }
 }
 
+void Arp_Reset(void)
+{
+    arp_pos = 0;
+    arp_act = sizeof(arp) - 1;
+    arp_cnt = arpModule.tempo;
+}
+
 void Arp_NoteOn(uint8_t ch, uint8_t note, float vel)
 {
     if ((arpModule.arpState == arp_acti) && (ch == arpModule.rxCh))

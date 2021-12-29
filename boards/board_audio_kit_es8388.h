@@ -57,10 +57,10 @@
 /* on board led */
 #define BLINK_LED_PIN     19 // IO19 -> D5
 
-
-//#define MIDI_RX_PIN 22 /* U2RRXD */
-//#define MIDI_RX_PIN 19
-#define MIDI_RX_PIN 23 /* D5 LED will blink then */
+#define MIDI_PORT2_ACTIVE
+//#define MIDI_RX2_PIN 22 /* U2RRXD */
+//#define MIDI_RX2_PIN 19
+#define MIDI_RX2_PIN 23 /* D5 LED will blink then */
 #define LED_STRIP_PIN         12
 
 #if ES8388_CFG_I2C==1

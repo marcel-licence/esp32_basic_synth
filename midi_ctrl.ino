@@ -128,3 +128,4 @@ void MidiCtrl_TransposeReset(uint8_t ch, float value)
 }
 
 #endif /* MIDI_CTRL_ENABLED */
+

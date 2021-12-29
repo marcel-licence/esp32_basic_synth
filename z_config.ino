@@ -89,7 +89,7 @@ struct adc_to_midi_mapping_s adcToMidiMapping =
 struct midiControllerMapping edirolMapping[] =
 {
     /* transport buttons */
-    { 0x8, 0x52, "back", NULL, NULL, 0},
+    { 0x8, 0x52, "back", NULL, Synth_SongPosReset, 0},
     { 0xD, 0x52, "stop", NULL, NULL, 0},
     { 0xe, 0x52, "start", NULL, NULL, 0},
     { 0xe, 0x52, "start", NULL, NULL, 0},
@@ -149,7 +149,11 @@ struct midiControllerMapping edirolMapping[] =
     { 0x6, 0x11, "S7", NULL, Synth_SetParam, SYNTH_PARAM_FIL_ENV_SUSTAIN},
     { 0x7, 0x11, "S8", NULL, Synth_SetParam, SYNTH_PARAM_FIL_ENV_RELEASE},
 
+#ifdef ARP_MODULE_ENABLED
+    { 0x1, 0x12, "S9", NULL, Arp_Tempo, 0},
+#else
     { 0x1, 0x12, "S9", NULL, Synth_SetParam, 8},
+#endif
 
     /* rotary */
 #ifdef USE_UNISON
@@ -186,6 +190,8 @@ struct midiMapping_s midiMapping =
 #endif
     Synth_PitchBend,
     Synth_ModulationWheel,
+    Synth_RealTimeMsg,
+    Synth_SongPosition,
     edirolMapping,
     sizeof(edirolMapping) / sizeof(edirolMapping[0]),
 };
