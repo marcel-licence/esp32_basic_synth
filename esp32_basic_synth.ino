@@ -207,6 +207,63 @@ void Core0Task(void *parameter)
     }
 }
 
+static uint32_t sync = 0;
+static uint8_t syncDiv = 0;
+
+void Midi_SyncRecvd()
+{
+    sync += 1024;
+
+
+
+    syncDiv++;
+
+    /* 24 sync messages per quarter note */
+    if (syncDiv >= 24)
+    {
+        syncDiv -= 24;
+
+        static uint8_t tick = 0;
+        Serial.printf("tick: %d\n", tick);
+        tick ++;
+        if (tick >= 4)
+        {
+            tick = 0;
+        }
+    }
+}
+
+void Synth_RealTimeMsg(uint8_t msg)
+{
+    switch (msg)
+    {
+    case 0xfa: /* start */
+        syncDiv = 0;
+        Arp_Reset();
+        break;
+    case 0xf8: /* Timing Clock */
+        Midi_SyncRecvd();
+        break;
+    }
+}
+
+void Synth_SongPosition(uint16_t pos)
+{
+    Serial.printf("Songpos: %d\n", pos);
+    if (pos == 0)
+    {
+        syncDiv = 0;
+        Arp_Reset();
+    }
+}
+
+void Synth_SongPosReset(uint8_t unused, float var)
+{
+    if (var > 0)
+    {
+        Synth_SongPosition(0);
+    }
+}
 /*
  * use this if something should happen every second
  * - you can drive a blinking LED for example
@@ -229,6 +286,17 @@ static float fr_sample[SAMPLE_BUFFER_SIZE];
 
 void loop()
 {
+#if 0
+    while (true)
+    {
+        if (Serial2.available())
+        {
+            Serial.printf(" %02x", Serial2.read());
+        }
+        delay(20);
+    }
+#endif
+
     static uint32_t loop_cnt_1hz;
 
     loop_cnt_1hz += SAMPLE_BUFFER_SIZE;
@@ -239,7 +307,12 @@ void loop()
     }
 
 #ifdef ARP_MODULE_ENABLED
+#ifdef MIDI_SYNC_MASTER
     Arp_Process(SAMPLE_BUFFER_SIZE);
+#else
+    Arp_Process(sync);
+    sync = 0;
+#endif
 #endif
 
     if (i2s_write_stereo_samples_buff(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE))
