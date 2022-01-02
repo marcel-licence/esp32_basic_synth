@@ -199,7 +199,7 @@ void Status_Process_Sample(uint32_t inc)
 
 void Status_Process(void)
 {
-#ifdef DISPLAY_FROM_STATUS_ENABLED
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
     if (triggerTerminalOutput)
     {
         if (statusMsg[0] == 0)
@@ -235,7 +235,7 @@ void Status_ValueChangedFloat(const char *descr, float value)
     statusMsgShowTimer = 0;
     sprintf(statusMsg, "%s: %0.3f", descr, value);
     triggerTerminalOutput = true;
-#ifdef DISPLAY_FROM_STATUS_ENABLED
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
     Display_ShowValueFloat(descr, value);
 #endif
 }
@@ -248,7 +248,7 @@ void Status_ValueChangedFloatArr(const char *descr, float value, int index)
     statusMsgShowTimer = 0;
     sprintf(statusMsg, "%s[%d]: %0.3f", descr, index, value);
     triggerTerminalOutput = true;
-#ifdef DISPLAY_FROM_STATUS_ENABLED
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
     Display_ShowValueFloatArr(descr, value, index);
 #endif
 }
@@ -258,7 +258,7 @@ void Status_ValueChangedIntArr(const char *descr, int value, int index)
     statusMsgShowTimer = 0;
     sprintf(statusMsg, "%s[%d]: %d", descr, index, value);
     triggerTerminalOutput = true;
-#ifdef DISPLAY_FROM_STATUS_ENABLED
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
     Display_ShowValueIntArr(descr, value, index);
 #endif
 }
@@ -270,7 +270,7 @@ void Status_ValueChangedInt(const char *descr, int value)
     statusMsgShowTimer = 0;
     sprintf(statusMsg, "%s: %d", descr, value);
     triggerTerminalOutput = true;
-#ifdef DISPLAY_FROM_STATUS_ENABLED
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
     Display_ShowValueInt(descr, value);
 #endif
 }
