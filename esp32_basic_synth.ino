@@ -324,8 +324,10 @@ void loop()
     MidiSyncMasterLoop();
 #endif
 
+#ifdef ARP_MODULE_ENABLED
     Arp_Process(sync);
     sync = 0;
+#endif
 
     if (i2s_write_stereo_samples_buff(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE))
     {
