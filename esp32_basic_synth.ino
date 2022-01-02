@@ -49,18 +49,20 @@
 #include "config.h"
 
 
-#include <Arduino.h>
 /*
  * required include files
  * add also includes used for other modules
  * otherwise arduino generated declaration may cause errors
  */
+#include <Arduino.h>
+
 #include <SPI.h>
 #include <Wire.h>
 #include <WiFi.h>
 
 /* requires the ml_Synth library */
 #include <ml_arp.h>
+#include <ml_midi_ctrl.h>
 
 
 void setup()
@@ -300,17 +302,6 @@ static float fr_sample[SAMPLE_BUFFER_SIZE];
 
 void loop()
 {
-#if 0
-    while (true)
-    {
-        if (Serial2.available())
-        {
-            Serial.printf(" %02x", Serial2.read());
-        }
-        delay(20);
-    }
-#endif
-
     static uint32_t loop_cnt_1hz;
 
     loop_cnt_1hz += SAMPLE_BUFFER_SIZE;
@@ -347,17 +338,30 @@ void loop()
      * Midi does not required to be checked after every processed sample
      * - we divide our operation by 8
      */
-    {
-        Midi_Process();
+    Midi_Process();
 #ifdef MIDI_VIA_USB_ENABLED
-        UsbMidi_ProcessSync();
+    UsbMidi_ProcessSync();
 #endif
-    }
 }
 
 /*
  * Callbacks
  */
+void MidiCtrl_Cb_NoteOn(uint8_t ch, uint8_t note, float vel)
+{
+    Arp_NoteOn(ch, note, vel);
+}
+
+void MidiCtrl_Cb_NoteOff(uint8_t ch, uint8_t note)
+{
+    Arp_NoteOff(ch, note);
+}
+
+void MidiCtrl_Status_ValueChangedIntArr(const char *descr, int value, int index)
+{
+    Status_ValueChangedIntArr(descr, value, index);
+}
+
 void Arp_Cb_NoteOn(uint8_t ch, uint8_t note, float vel)
 {
     Synth_NoteOn(ch, note, vel);
@@ -405,7 +409,6 @@ void App_UsbMidiShortMsgReceived(uint8_t *msg)
 #if defined(I2C_SCL) && defined (I2C_SDA)
 void  ScanI2C(void)
 {
-
     Wire.begin(I2C_SDA, I2C_SCL);
 
     byte error, address;
