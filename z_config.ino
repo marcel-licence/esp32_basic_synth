@@ -175,7 +175,9 @@ struct midiControllerMapping edirolMapping[] =
     { 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
 
     /* Central slider */
-    { 0x0, 0x13, "H1", NULL, NULL, 0},
+#ifdef MIDI_SYNC_MASTER
+    { 0x0, 0x13, "H1", NULL, Synth_SetMidiMasterTempo, 0},
+#endif
 };
 
 struct midiMapping_s midiMapping =

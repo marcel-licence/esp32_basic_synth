@@ -29,16 +29,16 @@
  */
 
 /**
-* @file esp32_basic_synth.ino
-* @author Marcel Licence
-* @date 06.03.2021
-*
-* @brief   This is the main project file to test the ML_SynthLibrary (organ module)
-*          It should be compatible with ESP32 and ESP8266
-*
-* pinout of ESP32 DevKit found here:
-* @see https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/
-*/
+ * @file esp32_basic_synth.ino
+ * @author Marcel Licence
+ * @date 06.03.2021
+ *
+ * @brief   This is the main project file of the basic synthesizer
+ *          It should be compatible with ESP32 and ESP8266
+ *
+ * pinout of ESP32 DevKit found here:
+ * @see https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/
+ */
 
 
 #ifdef __CDT_PARSER__
@@ -49,6 +49,7 @@
 #include "config.h"
 
 
+#include <Arduino.h>
 /*
  * required include files
  * add also includes used for other modules
@@ -56,11 +57,10 @@
  */
 #include <SPI.h>
 #include <Wire.h>
-#include <Arduino.h>
 #include <WiFi.h>
 
-
-
+/* requires the ml_Synth library */
+#include <ml_arp.h>
 
 
 void setup()
@@ -107,6 +107,8 @@ void setup()
      */
     Midi_Setup();
 
+    Arp_Init(24 * 4); /* slowest tempo one step per bar */
+
     Serial.printf("Turn off Wifi/Bluetooth\n");
 #if 0
     setup_wifi();
@@ -119,13 +121,12 @@ void setup()
     // esp_wifi_deinit();
 #endif
 
-
-
-
+#ifdef ESP32
     Serial.printf("ESP.getFreeHeap() %d\n", ESP.getFreeHeap());
     Serial.printf("ESP.getMinFreeHeap() %d\n", ESP.getMinFreeHeap());
     Serial.printf("ESP.getHeapSize() %d\n", ESP.getHeapSize());
     Serial.printf("ESP.getMaxAllocHeap() %d\n", ESP.getMaxAllocHeap());
+#endif
 
     Serial.printf("Firmware started successfully\n");
 
@@ -134,10 +135,15 @@ void setup()
 #endif
 
 #if (defined ADC_TO_MIDI_ENABLED) || (defined MIDI_VIA_USB_ENABLED)
+#ifdef ESP32
     Core0TaskInit();
+#else
+#error only supported by ESP32 platform
+#endif
 #endif
 }
 
+#ifdef ESP32
 /*
  * Core 0
  */
@@ -206,53 +212,60 @@ void Core0Task(void *parameter)
         yield();
     }
 }
+#endif
 
 static uint32_t sync = 0;
-static uint8_t syncDiv = 0;
 
 void Midi_SyncRecvd()
 {
-    sync += 1024;
-
-
-
-    syncDiv++;
-
-    /* 24 sync messages per quarter note */
-    if (syncDiv >= 24)
-    {
-        syncDiv -= 24;
-
-        static uint8_t tick = 0;
-        Serial.printf("tick: %d\n", tick);
-        tick ++;
-        if (tick >= 4)
-        {
-            tick = 0;
-        }
-    }
+    sync += 1;
 }
 
 void Synth_RealTimeMsg(uint8_t msg)
 {
+#ifndef MIDI_SYNC_MASTER
     switch (msg)
     {
     case 0xfa: /* start */
-        syncDiv = 0;
         Arp_Reset();
         break;
     case 0xf8: /* Timing Clock */
         Midi_SyncRecvd();
         break;
     }
+#endif
 }
+
+#ifdef MIDI_SYNC_MASTER
+
+#define MIDI_PPQ    24
+#define SAMPLES_PER_MIN  (SAMPLE_RATE*60)
+
+static float midi_tempo = 120.0f;
+
+void MidiSyncMasterLoop(void)
+{
+    static float midiDiv = 0;
+    midiDiv += SAMPLE_BUFFER_SIZE;
+    if (midiDiv >= (SAMPLES_PER_MIN) / (MIDI_PPQ * midi_tempo))
+    {
+        midiDiv -= (SAMPLES_PER_MIN) / (MIDI_PPQ * midi_tempo);
+        Midi_SyncRecvd();
+    }
+}
+
+void Synth_SetMidiMasterTempo(uint8_t unused, float val)
+{
+    midi_tempo = 60.0f + val * (240.0f - 60.0f);
+}
+
+#endif
 
 void Synth_SongPosition(uint16_t pos)
 {
     Serial.printf("Songpos: %d\n", pos);
     if (pos == 0)
     {
-        syncDiv = 0;
         Arp_Reset();
     }
 }
@@ -264,6 +277,7 @@ void Synth_SongPosReset(uint8_t unused, float var)
         Synth_SongPosition(0);
     }
 }
+
 /*
  * use this if something should happen every second
  * - you can drive a blinking LED for example
@@ -306,14 +320,12 @@ void loop()
         loop_cnt_1hz = 0;
     }
 
-#ifdef ARP_MODULE_ENABLED
 #ifdef MIDI_SYNC_MASTER
-    Arp_Process(SAMPLE_BUFFER_SIZE);
-#else
+    MidiSyncMasterLoop();
+#endif
+
     Arp_Process(sync);
     sync = 0;
-#endif
-#endif
 
     if (i2s_write_stereo_samples_buff(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE))
     {
@@ -341,6 +353,42 @@ void loop()
     }
 }
 
+/*
+ * Callbacks
+ */
+void Arp_Cb_NoteOn(uint8_t ch, uint8_t note, float vel)
+{
+    Synth_NoteOn(ch, note, vel);
+}
+
+void Arp_Cb_NoteOff(uint8_t ch, uint8_t note)
+{
+    Synth_NoteOff(ch, note);
+}
+
+void Arp_Status_ValueChangedInt(const char *msg, int value)
+{
+    Status_ValueChangedInt(msg, value);
+}
+
+void Arp_Status_LogMessage(const char *msg)
+{
+    Status_LogMessage(msg);
+}
+
+void Arp_Status_ValueChangedFloat(const char *msg, float value)
+{
+    Status_ValueChangedFloat(msg, value);
+}
+
+void Arp_Cb_Step(uint8_t step)
+{
+    /* ignore */
+}
+
+/*
+ * MIDI via USB Host Module
+ */
 #ifdef MIDI_VIA_USB_ENABLED
 void App_UsbMidiShortMsgReceived(uint8_t *msg)
 {
