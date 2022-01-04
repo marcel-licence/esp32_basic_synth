@@ -172,7 +172,8 @@ struct midiControllerMapping edirolMapping[] =
     //{ 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_FILT_RESO},
     { 0x7, 0x10, "R8", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_PORT_TIME},
 
-    { 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
+    //{ 0x0, 0x12, "R9", NULL, Synth_SetParam, SYNTH_PARAM_VOICE_NOISE_LEVEL},
+    { 0x0, 0x12, "R9", NULL, Reverb_SetLevel, SYNTH_PARAM_VOICE_NOISE_LEVEL},
 
     /* Central slider */
 #ifdef MIDI_SYNC_MASTER
