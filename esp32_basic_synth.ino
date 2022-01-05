@@ -48,7 +48,6 @@
 
 #include "config.h"
 
-
 /*
  * required include files
  * add also includes used for other modules
@@ -62,7 +61,11 @@
 
 /* requires the ml_Synth library */
 #include <ml_arp.h>
+#include <ml_reverb.h>
 #include <ml_midi_ctrl.h>
+#if 0 /* this comes in future */
+#include <ml_scope.h>
+#endif
 
 
 void setup()
@@ -87,40 +90,27 @@ void setup()
     Synth_Init();
     Serial.printf("Initialize I2S Module\n");
 
-    // setup_reverb();
-
 #ifdef BLINK_LED_PIN
     Blink_Setup();
 #endif
 
-#ifdef ESP32_AUDIO_KIT
-#ifdef ES8388_ENABLED
-    ES8388_Setup();
-#else
-    ac101_setup();
-#endif
-#endif
-
-    setup_i2s();
-    Serial.printf("Initialize Midi Module\n");
+    Audio_Setup();
 
     /*
      * setup midi module / rx port
      */
     Midi_Setup();
 
+    /*
+     * Initialize reverb
+     * The buffer shall be static to ensure that
+     * the memory will be exclusive available for the reverb module
+     */
+    static float revBuffer[REV_BUFF_SIZE];
+    Reverb_Setup(revBuffer);
+
+#ifdef ARP_MODULE_ENABLED
     Arp_Init(24 * 4); /* slowest tempo one step per bar */
-
-    Serial.printf("Turn off Wifi/Bluetooth\n");
-#if 0
-    setup_wifi();
-#else
-    WiFi.mode(WIFI_OFF);
-#endif
-
-#ifndef ESP8266
-    btStop();
-    // esp_wifi_deinit();
 #endif
 
 #ifdef ESP32
@@ -128,6 +118,13 @@ void setup()
     Serial.printf("ESP.getMinFreeHeap() %d\n", ESP.getMinFreeHeap());
     Serial.printf("ESP.getHeapSize() %d\n", ESP.getHeapSize());
     Serial.printf("ESP.getMaxAllocHeap() %d\n", ESP.getMaxAllocHeap());
+
+    Serial.printf("Total heap: %d\n", ESP.getHeapSize());
+    Serial.printf("Free heap: %d\n", ESP.getFreeHeap());
+
+    /* PSRAM will be fully used by the looper */
+    Serial.printf("Total PSRAM: %d\n", ESP.getPsramSize());
+    Serial.printf("Free PSRAM: %d\n", ESP.getFreePsram());
 #endif
 
     Serial.printf("Firmware started successfully\n");
@@ -214,7 +211,7 @@ void Core0Task(void *parameter)
         yield();
     }
 }
-#endif
+#endif /* ESP32 */
 
 static uint32_t sync = 0;
 
@@ -311,6 +308,15 @@ void loop()
         loop_cnt_1hz = 0;
     }
 
+    /*
+     * Midi does not required to be checked after every processed sample
+     * - we divide our operation by 8
+     */
+    Midi_Process();
+#ifdef MIDI_VIA_USB_ENABLED
+    UsbMidi_ProcessSync();
+#endif
+
 #ifdef MIDI_SYNC_MASTER
     MidiSyncMasterLoop();
 #endif
@@ -320,10 +326,6 @@ void loop()
     sync = 0;
 #endif
 
-    if (i2s_write_stereo_samples_buff(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE))
-    {
-        /* nothing for here */
-    }
 
     for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
     {
@@ -334,14 +336,12 @@ void loop()
         Delay_Process(&fl_sample[i], &fr_sample[i]);
     }
 
-    /*
-     * Midi does not required to be checked after every processed sample
-     * - we divide our operation by 8
-     */
-    Midi_Process();
-#ifdef MIDI_VIA_USB_ENABLED
-    UsbMidi_ProcessSync();
-#endif
+    Reverb_Process(fl_sample, SAMPLE_BUFFER_SIZE);
+    memcpy(fr_sample,  fl_sample, sizeof(fr_sample));
+
+    //ReverbSc_Process(fl_sample, fr_sample, &fl_sample, &fr_sample);
+
+    Audio_Output(fl_sample, fr_sample);
 }
 
 /*
