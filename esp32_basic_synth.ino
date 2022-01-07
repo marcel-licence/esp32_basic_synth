@@ -63,7 +63,8 @@
 #include <ml_arp.h>
 #include <ml_reverb.h>
 #include <ml_midi_ctrl.h>
-#if 0 /* this comes in future */
+#include <ml_delay.h>
+#ifdef OLED_OSC_DISP_ENABLED
 #include <ml_scope.h>
 #endif
 
@@ -84,7 +85,6 @@ void setup()
     Serial.printf("This is free software, and you are welcome to redistribute it\n");
     Serial.printf("under certain conditions; \n");
 
-    Delay_Init();
 
     Serial.printf("Initialize Synth Module\n");
     Synth_Init();
@@ -96,10 +96,6 @@ void setup()
 
     Audio_Setup();
 
-    /*
-     * setup midi module / rx port
-     */
-    Midi_Setup();
 
     /*
      * Initialize reverb
@@ -108,6 +104,18 @@ void setup()
      */
     static float revBuffer[REV_BUFF_SIZE];
     Reverb_Setup(revBuffer);
+
+    /*
+     * Prepare a buffer which can be used for the delay
+     */
+    static int16_t *delBuffer1 = (int16_t *)malloc(sizeof(int16_t) * MAX_DELAY);
+    static int16_t *delBuffer2 = (int16_t *)malloc(sizeof(int16_t) * MAX_DELAY);
+    Delay_Init2(delBuffer1, delBuffer2, MAX_DELAY);
+
+    /*
+     * setup midi module / rx port
+     */
+    Midi_Setup();
 
 #ifdef ARP_MODULE_ENABLED
     Arp_Init(24 * 4); /* slowest tempo one step per bar */
@@ -133,7 +141,7 @@ void setup()
     Synth_NoteOn(0, 64, 1.0f);
 #endif
 
-#if (defined ADC_TO_MIDI_ENABLED) || (defined MIDI_VIA_USB_ENABLED)
+#if (defined ADC_TO_MIDI_ENABLED) || (defined MIDI_VIA_USB_ENABLED) || (defined OLED_OSC_DISP_ENABLED)
 #ifdef ESP32
     Core0TaskInit();
 #else
@@ -156,11 +164,17 @@ void Core0TaskInit()
     xTaskCreatePinnedToCore(Core0Task, "CoreTask0", 8000, NULL, 999, &Core0TaskHnd, 0);
 }
 
+inline
 void Core0TaskSetup()
 {
     /*
      * init your stuff for core0 here
      */
+
+#ifdef OLED_OSC_DISP_ENABLED
+    ScopeOled_Setup();
+#endif
+
 #ifdef ADC_TO_MIDI_ENABLED
     AdcMul_Init();
 #endif
@@ -195,6 +209,10 @@ void Core0TaskLoop()
 
 #ifdef MCP23_MODULE_ENABLED
     MCP23_Loop();
+#endif
+
+#ifdef OLED_OSC_DISP_ENABLED
+    ScopeOled_Process();
 #endif
 }
 
@@ -330,18 +348,29 @@ void loop()
     for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
     {
         Synth_Process(&fl_sample[i], &fr_sample[i]);
-        /*
-         * process delay line
-         */
-        Delay_Process(&fl_sample[i], &fr_sample[i]);
     }
 
+    /*
+     * process delay line
+     */
+    Delay_Process_Buff2(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE);
+
+    /*
+     * add some mono reverb
+     */
     Reverb_Process(fl_sample, SAMPLE_BUFFER_SIZE);
     memcpy(fr_sample,  fl_sample, sizeof(fr_sample));
 
     //ReverbSc_Process(fl_sample, fr_sample, &fl_sample, &fr_sample);
 
+    /*
+     * Output the audio
+     */
     Audio_Output(fl_sample, fr_sample);
+
+#ifdef OLED_OSC_DISP_ENABLED
+    ScopeOled_AddSamples(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE);
+#endif
 }
 
 /*
