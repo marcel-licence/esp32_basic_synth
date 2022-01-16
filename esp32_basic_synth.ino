@@ -231,11 +231,11 @@ void Core0Task(void *parameter)
 }
 #endif /* ESP32 */
 
-static uint32_t sync = 0;
+static uint32_t midiSyncCount = 0;
 
 void Midi_SyncRecvd()
 {
-    sync += 1;
+    midiSyncCount += 1;
 }
 
 void Synth_RealTimeMsg(uint8_t msg)
@@ -340,8 +340,8 @@ void loop()
 #endif
 
 #ifdef ARP_MODULE_ENABLED
-    Arp_Process(sync);
-    sync = 0;
+    Arp_Process(midiSyncCount);
+    midiSyncCount = 0;
 #endif
 
 
@@ -443,7 +443,7 @@ void  ScanI2C(void)
     byte error, address;
     int nDevices;
 
-    Serial.println("Scanning...");
+    Serial.printf("Scanning...\nSDA: %d\nSCL: %d\n", I2C_SDA, I2C_SCL);
 
     nDevices = 0;
     for (address = 1; address < 127; address++)
