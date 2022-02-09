@@ -61,7 +61,7 @@
  *  MOSI: IO23
  */
 
-#include <usbh_midi.h>
+#include <usbh_midi.h> /* requires library USB_Host_Shield_2.0 from https://github.com/felis/USB_Host_Shield_2.0 */
 #include <usbhub.h>
 #include <SPI.h>
 

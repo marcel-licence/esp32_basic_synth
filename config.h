@@ -47,6 +47,11 @@
 #define CONFIG_H_
 
 
+/*
+ * you can select one of the pre-defined boards
+ * look into ML_SynthTools in ml_boards.h for more information
+ * @see https://github.com/marcel-licence/ML_SynthTools
+ */
 //#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
 //#define BOARD_ESP32_AUDIO_KIT_AC101 /* activate this when using the ESP32 Audio Kit v2.2 with the AC101 codec */
 #define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
@@ -71,7 +76,7 @@
  */
 #define MIDI_RECV_FROM_SERIAL
 
-/* activate MIDI via USB */
+/* activate MIDI via USB (please look into usbMidiHost.ino for more information) */
 //#define MIDI_VIA_USB_ENABLED
 
 /* use this to display a scope on the oled display */
@@ -91,7 +96,7 @@
  * include the board configuration
  * there you will find the most hardware depending pin settings
  */
-#include <ml_boards.h>
+#include <ml_boards.h> /* requires library ML_SynthTools from https://github.com/marcel-licence/ML_SynthTools */
 
 #ifdef BOARD_ML_V1
 #elif (defined BOARD_ESP32_AUDIO_KIT_AC101)
