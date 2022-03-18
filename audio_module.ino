@@ -72,7 +72,9 @@ void Audio_Setup(void)
 {
 #if (defined ESP8266) || (defined ESP32)
     WiFi.mode(WIFI_OFF);
+#ifndef BLE_MIDI
     btStop();
+#endif
 #endif
 
 #if 0 //ndef ESP8266
@@ -372,6 +374,16 @@ void Audio_Input(float *left, float *right)
 
 void Audio_Output(float *left, float *right)
 {
+#ifdef OUTPUT_SAW_TEST
+    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
+    {
+        left[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
+        right[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
+        left[i] -= 0.5f;
+        right[i] -= 0.5f;
+    }
+#endif
+
 #ifdef ESP32
     i2s_write_stereo_samples_buff(left, right, SAMPLE_BUFFER_SIZE);
 #endif /* ESP32 */

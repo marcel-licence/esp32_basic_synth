@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,6 +88,12 @@ void setup()
 
     Serial.printf("Initialize Synth Module\n");
     Synth_Init();
+
+#ifdef BLE_MIDI
+    Serial.printf("Initialize MIDI over Bluetooth\n");
+    BLE_setup();
+#endif
+
     Serial.printf("Initialize I2S Module\n");
 
 #ifdef BLINK_LED_PIN
@@ -108,9 +114,11 @@ void setup()
     /*
      * Prepare a buffer which can be used for the delay
      */
+#ifdef MAX_DELAY
     static int16_t *delBuffer1 = (int16_t *)malloc(sizeof(int16_t) * MAX_DELAY);
     static int16_t *delBuffer2 = (int16_t *)malloc(sizeof(int16_t) * MAX_DELAY);
     Delay_Init2(delBuffer1, delBuffer2, MAX_DELAY);
+#endif
 
     /*
      * setup midi module / rx port
@@ -137,7 +145,7 @@ void setup()
 
     Serial.printf("Firmware started successfully\n");
 
-#if 0 /* activate this line to get a tone on startup to test the DAC */
+#ifdef NOTE_ON_AFTER_SETUP /* activate this line to get a tone on startup to test the DAC */
     Synth_NoteOn(0, 64, 1.0f);
 #endif
 
@@ -334,6 +342,9 @@ void loop()
 #ifdef MIDI_VIA_USB_ENABLED
     UsbMidi_ProcessSync();
 #endif
+#ifdef BLE_MIDI
+    BleMidiProc();
+#endif
 
 #ifdef MIDI_SYNC_MASTER
     MidiSyncMasterLoop();
@@ -353,15 +364,15 @@ void loop()
     /*
      * process delay line
      */
+#ifdef MAX_DELAY
     Delay_Process_Buff2(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE);
+#endif
 
     /*
      * add some mono reverb
      */
     Reverb_Process(fl_sample, SAMPLE_BUFFER_SIZE);
     memcpy(fr_sample,  fl_sample, sizeof(fr_sample));
-
-    //ReverbSc_Process(fl_sample, fr_sample, &fl_sample, &fr_sample);
 
     /*
      * Output the audio
