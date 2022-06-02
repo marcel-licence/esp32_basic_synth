@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Dieses Programm ist Freie Software: Sie k�nnen es unter den Bedingungen
+ * Dieses Programm ist Freie Software: Sie können es unter den Bedingungen
  * der GNU General Public License, wie von der Free Software Foundation,
  * Version 3 der Lizenz oder (nach Ihrer Wahl) jeder neueren
- * ver�ffentlichten Version, weiter verteilen und/oder modifizieren.
+ * veröffentlichten Version, weiter verteilen und/oder modifizieren.
  *
- * Dieses Programm wird in der Hoffnung bereitgestellt, dass es n�tzlich sein wird, jedoch
- * OHNE JEDE GEW�HR,; sogar ohne die implizite
- * Gew�hr der MARKTF�HIGKEIT oder EIGNUNG F�R EINEN BESTIMMTEN ZWECK.
- * Siehe die GNU General Public License f�r weitere Einzelheiten.
+ * Dieses Programm wird in der Hoffnung bereitgestellt, dass es nützlich sein wird, jedoch
+ * OHNE JEDE GEWÄHR,; sogar ohne die implizite
+ * Gewähr der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.
+ * Siehe die GNU General Public License für weitere Einzelheiten.
  *
  * Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
  * Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
@@ -124,6 +124,12 @@ void Audio_Setup(void)
         while (1); // do nothing
     }
 #endif
+
+#if (defined ARDUINO_GENERIC_F407VGTX) || (defined ARDUINO_DISCO_F407VG)
+
+    STM32_AudioInit();
+
+#endif /* (defined ARDUINO_GENERIC_F407VGTX) || (defined ARDUINO_DISCO_F407VG) */
 }
 
 #ifdef TEENSYDUINO
@@ -222,7 +228,7 @@ void ProcessAudio(uint16_t *buff, size_t len)
 
 #endif
 
-void Audio_OutputMono(int32_t *samples)
+void Audio_OutputMono(const int32_t *samples)
 {
 #ifdef ESP8266
     for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
@@ -348,23 +354,14 @@ void Audio_OutputMono(int32_t *samples)
      * Todo Implementation for the STM32F407VGT6
      * Can be found on the ST Discovery Board
      */
-#if 0
-    int16_t u16int[2 * SAMPLE_BUFFER_SIZE];
-
-    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
-    {
-        u16int[2 * i] = samples[i];
-        u16int[(2 * i) + 1] = samples[i];
-    }
-    for (int i = 0; i < SAMPLE_BUFFER_SIZE * 2; i++)
-    {
-        I2S.write(u16int[i]);
-    }
-#endif
 #endif /* ARDUINO_GENERIC_F407VGTX */
+
+#ifdef ARDUINO_DISCO_F407VG
+    STM32_AudioWriteS16(samples);
+#endif
 }
 
-#if (defined ESP32) || (defined TEENSYDUINO) || (defined ARDUINO_DAISY_SEED) || (defined ARDUINO_GENERIC_F407VGTX)
+#if (defined ESP32) || (defined TEENSYDUINO) || (defined ARDUINO_DAISY_SEED) || (defined ARDUINO_GENERIC_F407VGTX) || (defined ARDUINO_DISCO_F407VG) || (defined ARDUINO_BLACK_F407VE)
 void Audio_Input(float *left, float *right)
 {
 #ifdef ESP32
@@ -372,15 +369,13 @@ void Audio_Input(float *left, float *right)
 #endif /* ESP32 */
 }
 
-void Audio_Output(float *left, float *right)
+void Audio_Output(const float *left, const float *right)
 {
 #ifdef OUTPUT_SAW_TEST
     for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
     {
-        left[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
-        right[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
-        left[i] -= 0.5f;
-        right[i] -= 0.5f;
+        left[i] = ((float)i) / ((float)SAMPLE_BUFFER_SIZE);
+        right[i] = ((float)i) / ((float)SAMPLE_BUFFER_SIZE);
     }
 #endif
 
@@ -440,17 +435,21 @@ void Audio_Output(float *left, float *right)
     memcpy(out_temp[0], left, sizeof(out_temp[0]));
     memcpy(out_temp[1], right, sizeof(out_temp[1]));
 
-
     dataReady = false;
 
 #endif /* ARDUINO_DAISY_SEED */
 
 #ifdef ARDUINO_GENERIC_F407VGTX
-    /*
-     * Todo Implementation for the STM32F407VGT6
-     * Can be found on the ST Discovery Board
-     */
+
+    STM32_AudioWrite(left, right);
+
+#endif /* ARDUINO_GENERIC_F407VGTX */
+
+#ifdef ARDUINO_DISCO_F407VG
+
+    STM32_AudioWrite(left, right);
+
 #endif /* ARDUINO_GENERIC_F407VGTX */
 }
-#endif /* (defined ESP32) || (defined TEENSYDUINO) || (defined ARDUINO_DAISY_SEED) || (defined ARDUINO_GENERIC_F407VGTX) */
+#endif /* (defined ESP32) || (defined TEENSYDUINO) || (defined ARDUINO_DAISY_SEED) || (defined ARDUINO_GENERIC_F407VGTX) || (defined ARDUINO_DISCO_F407VG) */
 

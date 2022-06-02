@@ -355,11 +355,15 @@ void loop()
     midiSyncCount = 0;
 #endif
 
+    /* zero buffer, otherwise you can pass trough an input signal */
+    memset(fl_sample, 0, sizeof(fl_sample));
+    memset(fr_sample, 0, sizeof(fr_sample));
 
-    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
-    {
-        Synth_Process(&fl_sample[i], &fr_sample[i]);
-    }
+#ifdef AUDIO_PASS_THROUGH
+    Audio_Input(left, right);
+#endif
+
+    Synth_Process(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE);
 
     /*
      * process delay line

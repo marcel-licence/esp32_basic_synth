@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,6 @@ void Blink_Setup(void)
     pinMode(BLINK_LED_PIN, OUTPUT);
 }
 
-
 inline
 void Blink_Process(void)
 {
@@ -59,6 +58,18 @@ void Blink_Process(void)
         digitalWrite(BLINK_LED_PIN, LOW);    // turn the LED off
     }
     ledOn = !ledOn;
+}
+
+void Blink_Pulse(uint8_t cnt)
+{
+    delay(500);
+    for (int i = 0; i < cnt; i++)
+    {
+        digitalWrite(BLINK_LED_PIN, HIGH);
+        delay(50);
+        digitalWrite(BLINK_LED_PIN, LOW);
+        delay(200);
+    }
 }
 
 #endif

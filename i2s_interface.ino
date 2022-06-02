@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,8 @@
 #endif
 
 
+#ifdef ESP32
+
 #include <driver/i2s.h>
 
 
@@ -58,19 +60,11 @@ const i2s_port_t i2s_port_number = I2S_NUM_0;
  * please refer to https://www.hackster.io/janost/audio-hacking-on-the-esp8266-fa9464#toc-a-simple-909-drum-synth-0
  * for the following implementation
  */
-#ifdef I2S_NODAC
-/* todo integrate code, or external module from hack a day using i2s signal wire as DAC */
-#else
 
-bool i2s_write_sample_32ch2(uint8_t *sample);
-
-bool i2s_write_sample_32ch2(uint8_t *sample)
+bool i2s_write_sample_32ch2(uint64_t sample)
 {
     static size_t bytes_written = 0;
-    static size_t bytes_read = 0;
-    i2s_read(i2s_port_number, (char *)sample, 8, &bytes_read, portMAX_DELAY);
-
-    i2s_write(i2s_port_number, (const char *)sample, 8, &bytes_written, portMAX_DELAY);
+    i2s_write((i2s_port_t)i2s_port_number, (const char *)&sample, 8, &bytes_written, portMAX_DELAY);
 
     if (bytes_written > 0)
     {
@@ -82,30 +76,7 @@ bool i2s_write_sample_32ch2(uint8_t *sample)
     }
 }
 
-#ifdef SAMPLE_SIZE_24BIT
-
-bool i2s_write_sample_24ch2(uint8_t *sample);
-
-bool i2s_write_sample_24ch2(uint8_t *sample)
-{
-    static size_t bytes_written1 = 0;
-    static size_t bytes_written2 = 0;
-    i2s_write(i2s_port_number, (const char *)&sample[1], 3, &bytes_written1, portMAX_DELAY);
-    i2s_write(i2s_port_number, (const char *)&sample[5], 3, &bytes_written2, portMAX_DELAY);
-
-    if ((bytes_written1 + bytes_written2) > 0)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-#endif
-
-bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
+bool i2s_write_stereo_samples(const float *fl_sample, const float *fr_sample)
 {
 #ifdef SAMPLE_SIZE_32BIT
     static union sampleTUNT
@@ -149,7 +120,7 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
     sampleDataU.ch[1] = int32_t(*fl_sample * 1073741823.0f);
 #endif
 
-    static size_t bytes_written = 0;
+    size_t bytes_written = 0;
 
 #ifdef SAMPLE_SIZE_16BIT
     i2s_write(i2s_port_number, (const char *)&sampleDataU.sample, 4, &bytes_written, portMAX_DELAY);
@@ -168,8 +139,39 @@ bool i2s_write_stereo_samples(float *fl_sample, float *fr_sample)
     }
 }
 
+#ifdef SAMPLE_SIZE_16BIT
+bool i2s_write_stereo_samples_i16(const int16_t *fl_sample, const int16_t *fr_sample)
+{
+    size_t bytes_written = 0;
+
+    static union sampleTUNT
+    {
+        uint32_t sample;
+        int16_t ch[2];
+    } sampleDataU;
+
+    sampleDataU.ch[0] = *fl_sample;
+    sampleDataU.ch[1] = *fr_sample;
+#ifdef CYCLE_MODULE_ENABLED
+    calcCycleCountPre();
+#endif
+    i2s_write(i2s_port_number, (const char *)&sampleDataU.sample, 4, &bytes_written, portMAX_DELAY);
+#ifdef CYCLE_MODULE_ENABLED
+    calcCycleCount();
+#endif
+    if (bytes_written > 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+#endif
+
 #ifdef SAMPLE_BUFFER_SIZE
-bool i2s_write_stereo_samples_buff(float *fl_sample, float *fr_sample, const int buffLen)
+bool i2s_write_stereo_samples_buff(const float *fl_sample, const float *fr_sample, const int buffLen)
 {
 #ifdef SAMPLE_SIZE_32BIT
     static union sampleTUNT
@@ -203,6 +205,19 @@ bool i2s_write_stereo_samples_buff(float *fl_sample, float *fr_sample, const int
 
     for (int n = 0; n < buffLen; n++)
     {
+#ifdef ES8388_ENABLED
+        /*
+         * using LEFT_RIGHT format
+         */
+#ifdef SAMPLE_SIZE_16BIT
+        sampleDataU[n].ch[1] = int16_t(fr_sample[n] * 16383.0f); /* some bits missing here */
+        sampleDataU[n].ch[0] = int16_t(fl_sample[n] * 16383.0f);
+#endif
+#ifdef SAMPLE_SIZE_32BIT
+        sampleDataU[n].ch[1] = int32_t(fr_sample[n] * 1073741823.0f); /* some bits missing here */
+        sampleDataU[n].ch[0] = int32_t(fl_sample[n] * 1073741823.0f);
+#endif
+#else
         /*
          * using RIGHT_LEFT format
          */
@@ -214,11 +229,18 @@ bool i2s_write_stereo_samples_buff(float *fl_sample, float *fr_sample, const int
         sampleDataU[n].ch[0] = int32_t(fr_sample[n] * 1073741823.0f); /* some bits missing here */
         sampleDataU[n].ch[1] = int32_t(fl_sample[n] * 1073741823.0f);
 #endif
+#endif
     }
 
     static size_t bytes_written = 0;
 
+#ifdef CYCLE_MODULE_ENABLED
+    calcCycleCountPre();
+#endif
     i2s_write(i2s_port_number, (const char *)&sampleDataU[0].sample, 4 * buffLen, &bytes_written, portMAX_DELAY);
+#ifdef CYCLE_MODULE_ENABLED
+    calcCycleCount();
+#endif
 
     if (bytes_written > 0)
     {
@@ -287,8 +309,6 @@ void i2s_read_stereo_samples_buff(float *fl_sample, float *fr_sample, const int 
 }
 #endif /* #ifdef SAMPLE_BUFFER_SIZE */
 
-#endif
-
 /*
  * i2s configuration
  */
@@ -303,7 +323,11 @@ i2s_config_t i2s_configuration =
 #ifdef I2S_NODAC
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+#ifdef ARDUINO_RUNNING_CORE
+    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+#else
     .communication_format = (i2s_comm_format_t)I2S_COMM_FORMAT_I2S_MSB,
+#endif
 #else
 #ifdef SAMPLE_SIZE_32BIT
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT, /* the DAC module will only take the 8bits from MSB */
@@ -315,7 +339,11 @@ i2s_config_t i2s_configuration =
     .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT, /* the DAC module will only take the 8bits from MSB */
 #endif
     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+#ifdef ARDUINO_RUNNING_CORE
+    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+#else
     .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
+#endif
 #endif
     .intr_alloc_flags = 0, // default interrupt priority
     .dma_buf_count = 8,
@@ -361,3 +389,6 @@ void setup_i2s()
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
 #endif
 }
+
+#endif /* ESP32 */
+

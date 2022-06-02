@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,11 @@
 #include "cdt.h"
 #endif
 
+
+/* requires the ML_SynthTools library: https://github.com/marcel-licence/ML_SynthTools */
+#include <ml_filter.h>
+#include <ml_waveform.h>
+
 /*
  * activate the following macro to enable unison mode
  * by default the saw wave form will be used
@@ -51,7 +56,7 @@
  */
 //#define USE_UNISON
 
-#define CHANNEL_MAX 2
+#define CHANNEL_MAX 16
 
 /*
  * Param indices for Synth_SetParam function
@@ -92,19 +97,8 @@
 #endif
 
 
-/*
- * this is just a kind of magic to go through the waveforms
- * - WAVEFORM_BIT sets the bit length of the pre calculated waveforms
- */
-#define WAVEFORM_BIT    10UL
-#define WAVEFORM_CNT    (1<<WAVEFORM_BIT)
-#define WAVEFORM_Q4     (1<<(WAVEFORM_BIT-2))
-#define WAVEFORM_MSK    ((1<<WAVEFORM_BIT)-1)
-#define WAVEFORM_I(i)   (((i) >> (32 - WAVEFORM_BIT)) & WAVEFORM_MSK)
-
-
 #define MIDI_NOTE_CNT 128
-uint32_t midi_note_to_add[MIDI_NOTE_CNT]; /* lookup to playback waveforms with correct frequency */
+static uint32_t midi_note_to_add[MIDI_NOTE_CNT]; /* lookup to playback waveforms with correct frequency */
 
 #ifdef USE_UNISON
 uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
@@ -118,7 +112,11 @@ uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
 /*
  * add here your waveforms
  */
+#if 0
 float *sine = NULL;
+#else
+float sine[WAVEFORM_CNT];
+#endif
 float *saw = NULL;
 float *square = NULL;
 float *pulse = NULL;
@@ -147,20 +145,9 @@ typedef enum
 /* this prototype is required .. others not -  i still do not know what magic arduino is doing */
 inline bool ADSR_Process(const struct adsrT *ctrl, float *ctrlSig, adsr_phaseT *phase);
 
-struct filterCoeffT
-{
-    float aNorm[2] = {0.0f, 0.0f};
-    float bNorm[3] = {1.0f, 0.0f, 0.0f};
-};
 
-struct filterProcT
-{
-    struct filterCoeffT *filterCoeff;
-    float w[3];
-};
-
-struct filterCoeffT filterGlobalC;
-struct filterProcT mainFilterL, mainFilterR;
+static struct filterCoeffT filterGlobalC;
+static struct filterProcT mainFilterL, mainFilterR;
 
 
 #define NOTE_STACK_MAX  8
@@ -205,7 +192,7 @@ struct channelSetting_s
     uint32_t noteStack[NOTE_STACK_MAX];
 };
 
-static struct channelSetting_s chCfg[16];
+static struct channelSetting_s chCfg[CHANNEL_MAX];
 static struct channelSetting_s *curChCfg = &chCfg[1];
 
 struct oscillatorT
@@ -222,7 +209,7 @@ struct oscillatorT
 float voiceSink[2];
 struct oscillatorT oscPlayer[MAX_POLY_OSC];
 
-uint32_t osc_act = 0;
+static uint32_t osc_act = 0;
 
 struct notePlayerT
 {
@@ -256,16 +243,19 @@ uint32_t voc_act = 0;
 
 
 
-
 void Synth_Init()
 {
+#ifdef ESP32
     randomSeed(34547379);
+#endif
 
     /*
      * we do not check if malloc was successful
      * if there is not enough memory left the application will crash
      */
+#if 0
     sine = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
+#endif
     saw = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
     square = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
     pulse = (float *)malloc(sizeof(float) * WAVEFORM_CNT);
@@ -285,7 +275,7 @@ void Synth_Init()
         sine[i] = val;
         saw[i] = (2.0f * ((float)i) / ((float)WAVEFORM_CNT)) - 1.0f;
         square[i] = (i > (WAVEFORM_CNT / 2)) ? 1 : -1;
-        pulse[i] = (i > (WAVEFORM_CNT / 4)) ? 1 : -1;
+        pulse[i] = (i > (WAVEFORM_CNT / 4)) ? 1.0f / 4.0f : -3.0f / 4.0f;
         tri[i] = ((i > (WAVEFORM_CNT / 2)) ? (((4.0f * (float)i) / ((float)WAVEFORM_CNT)) - 1.0f) : (3.0f - ((4.0f * (float)i) / ((float)WAVEFORM_CNT)))) - 2.0f;
         crappy_noise[i] = (random(1024) / 512.0f) - 1.0f;
         silence[i] = 0;
@@ -347,24 +337,20 @@ void Synth_Init()
     mainFilterL.filterCoeff = &filterGlobalC;
     mainFilterR.filterCoeff = &filterGlobalC;
 
-    for (int i = 0; i < 16; i++)
+    Filter_Proc_Init(&mainFilterL);
+    Filter_Proc_Init(&mainFilterR);
+    Filter_Coeff_Init(mainFilterL.filterCoeff);
+
+    Filter_Calculate(1.0f, 1.0f, &filterGlobalC);
+    Filter_CalculateNone(&filterGlobalC);
+
+    for (int i = 0; i < CHANNEL_MAX; i++)
     {
         Synth_ChannelSettingInit(&chCfg[i]);
     }
 }
 
-struct filterCoeffT mainFilt;
-
-/*
- * filter calculator:
- * https://www.earlevel.com/main/2013/10/13/biquad-calculator-v2/
- *
- * some filter implementations:
- * https://github.com/ddiakopoulos/MoogLadders/blob/master/src/Filters.h
- *
- * some more information about biquads:
- * https://www.earlevel.com/main/2003/02/28/biquads/
- */
+static struct filterCoeffT mainFilt;
 
 static float filtCutoff = 1.0f;
 static float filtReso = 0.5f;
@@ -405,69 +391,6 @@ static void Synth_ChannelSettingInit(struct channelSetting_s *setting)
 
     setting->noteCnt = 0;
     /* setting->noteStack[NOTE_STACK_MAX]; can be left uninitialized */
-}
-
-/*
- * calculate coefficients of the 2nd order IIR filter
- */
-inline void Filter_Calculate(float c, float reso, struct filterCoeffT *const  filterC)
-{
-    float *aNorm = filterC->aNorm;
-    float *bNorm = filterC->bNorm;
-
-    float Q = reso;
-    float  cosOmega, omega, sinOmega, alpha, a[3], b[3];
-
-    /*
-     * change curve of cutoff a bit
-     * maybe also log or exp function could be used
-     */
-    c = c * c * c;
-
-    if (c >= 1.0f)
-    {
-        omega = 1.0f;
-    }
-    else if (c < 0.0025f)
-    {
-        omega = 0.0025f;
-    }
-    else
-    {
-        omega = c;
-    }
-
-    /*
-     * use lookup here to get quicker results
-     */
-    cosOmega = sine[WAVEFORM_I((uint32_t)((float)((1ULL << 31) - 1) * omega + (float)((1ULL << 30) - 1)))];
-    sinOmega = sine[WAVEFORM_I((uint32_t)((float)((1ULL << 31) - 1) * omega))];
-
-    alpha = sinOmega / (2.0 * Q);
-    b[0] = (1 - cosOmega) / 2;
-    b[1] = 1 - cosOmega;
-    b[2] = b[0];
-    a[0] = 1 + alpha;
-    a[1] = -2 * cosOmega;
-    a[2] = 1 - alpha;
-
-    // Normalize filter coefficients
-    float factor = 1.0f / a[0];
-
-    aNorm[0] = a[1] * factor;
-    aNorm[1] = a[2] * factor;
-
-    bNorm[0] = b[0] * factor;
-    bNorm[1] = b[1] * factor;
-    bNorm[2] = b[2] * factor;
-}
-
-inline void Filter_Process(float *const signal, struct filterProcT *const filterP)
-{
-    const float out = filterP->filterCoeff->bNorm[0] * (*signal) + filterP->w[0];
-    filterP->w[0] = filterP->filterCoeff->bNorm[1] * (*signal) - filterP->filterCoeff->aNorm[0] * out + filterP->w[1];
-    filterP->w[1] = filterP->filterCoeff->bNorm[2] * (*signal) - filterP->filterCoeff->aNorm[1] * out;
-    *signal = out;
 }
 
 /*
@@ -537,21 +460,19 @@ float GetModulation(uint8_t ch)
     return chCfg[ch].modulationDepth * chCfg[ch].modulationPitch * (SineNorm((modSpeed * ((float)millis()) / 1000.0f)));
 }
 
-static float out_l, out_r;
 static uint32_t count = 0;
 
 //[[gnu::noinline, gnu::optimize ("fast-math")]]
-inline void Synth_Process(float *left, float *right)
+inline void Synth_Process(float *left, float *right, uint32_t len)
 {
     /*
      * update pitch bending / modulation
      */
-    if (count % 64 == 0)
     {
 
         for (int i = 0; i < CHANNEL_MAX; i++)
         {
-            float modulation = GetModulation(i) ;
+            float modulation = GetModulation(i);
 
             chCfg[i].port += chCfg[i].portAdd; /* active portamento */
             chCfg[i].port = chCfg[i].port > 1.0f ? 1.0f : chCfg[i].port; /* limit value to max of 1.0f */
@@ -566,104 +487,104 @@ inline void Synth_Process(float *left, float *right)
         }
     }
 
-
-    /* gerenate a noise signal */
-    float noise_signal = ((random(1024) / 512.0f) - 1.0f);
-
-    /*
-     * generator simulation, rotate all wheels
-     */
-    out_l = 0;
-    out_r = 0;
-
-    /* counter required to optimize processing */
-    count += 1;
-
-    /*
-     * destination for unused oscillators
-     */
-    voiceSink[0] = 0;
-    voiceSink[1] = 0;
-
-
-
-    /*
-     * oscillator processing -> mix to voice
-     */
-    for (int i = 0; i < MAX_POLY_OSC; i++)
+    for (uint32_t n = 0; n < len; n++)
     {
-        oscillatorT *osc = &oscPlayer[i];
+
+        /* gerenate a noise signal */
+        float noise_signal = ((random(1024) / 512.0f) - 1.0f);
+
+        /* counter required to optimize processing */
+        count += 1;
+
+        /*
+         * destination for unused oscillators
+         */
+        voiceSink[0] = 0;
+        voiceSink[1] = 0;
+
+        /*
+         * oscillator processing -> mix to voice
+         */
+        for (int i = 0; i < MAX_POLY_OSC; i++)
         {
-            osc->samplePos += (uint32_t)(osc->cfg->pitchMultiplier * ((float)osc->addVal));
-            float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
-            osc->dest[0] += osc->pan_l * sig;
-            osc->dest[1] += osc->pan_r * sig;
+            oscillatorT *osc = &oscPlayer[i];
+            {
+                osc->samplePos += (uint32_t)(osc->cfg->pitchMultiplier * ((float)osc->addVal));
+                float sig = (*osc->waveForm)[WAVEFORM_I(osc->samplePos)];
+                osc->dest[0] += osc->pan_l * sig;
+                osc->dest[1] += osc->pan_r * sig;
+            }
         }
-    }
 
-    /*
-     * voice processing
-     */
-    for (int i = 0; i < MAX_POLY_VOICE; i++) /* one loop is faster than two loops */
-    {
-        notePlayerT *voice = &voicePlayer[i];
-        if (voice->active)
+        /*
+         * voice processing
+         */
+        for (int i = 0; i < MAX_POLY_VOICE; i++) /* one loop is faster than two loops */
         {
-            if (count % 4 == 0)
+            notePlayerT *voice = &voicePlayer[i];
+            if (voice->active)
             {
-                voice->active = ADSR_Process(&voice->cfg->adsr_vol, &voice->control_sign, &voice->phase);
-                if (voice->active == false)
+                if (n % 4 == 0)
                 {
-                    Voice_Off(i);
+                    voice->active = ADSR_Process(&voice->cfg->adsr_vol, &voice->control_sign, &voice->phase);
+                    if (voice->active == false)
+                    {
+                        Voice_Off(i);
+                    }
+                    /*
+                     * make is slow to avoid bad things .. or crying ears
+                     */
+                    (void)ADSR_Process(&voice->cfg->adsr_fil, &voice->f_control_sign, &voice->f_phase);
                 }
-                /*
-                 * make is slow to avoid bad things .. or crying ears
-                 */
-                (void)ADSR_Process(&voice->cfg->adsr_fil, &voice->f_control_sign, &voice->f_phase);
+
+                /* add some noise to the voice */
+                voice->lastSample[0] += noise_signal * voice->cfg->soundNoiseLevel;
+                voice->lastSample[1] += noise_signal * voice->cfg->soundNoiseLevel;
+
+                voice->lastSample[0] *= voice->control_sign * voice->velocity;
+                voice->lastSample[1] *= voice->control_sign * voice->velocity;
+
+                if (count % 32 == 0)
+                {
+                    voice->f_control_sign_slow = 0.05 * voice->f_control_sign + 0.95 * voice->f_control_sign_slow;
+                    Filter_Calculate(voice->f_control_sign_slow, voice->cfg->soundFiltReso, &voice->filterC);
+                }
+
+                Filter_Process(&voice->lastSample[0], &voice->filterL);
+                Filter_Process(&voice->lastSample[1], &voice->filterR);
+
+                left[n] += voice->lastSample[0];
+                right[n] += voice->lastSample[1];
+                voice->lastSample[0] = 0.0f;
+                voice->lastSample[1] = 0.0f;
             }
-
-            /* add some noise to the voice */
-            voice->lastSample[0] += noise_signal * voice->cfg->soundNoiseLevel;
-            voice->lastSample[1] += noise_signal * voice->cfg->soundNoiseLevel;
-
-            voice->lastSample[0] *= voice->control_sign * voice->velocity;
-            voice->lastSample[1] *= voice->control_sign * voice->velocity;
-
-            if (count % 32 == 0)
-            {
-                voice->f_control_sign_slow = 0.05 * voice->f_control_sign + 0.95 * voice->f_control_sign_slow;
-                Filter_Calculate(voice->f_control_sign_slow, voice->cfg->soundFiltReso, &voice->filterC);
-            }
-
-            Filter_Process(&voice->lastSample[0], &voice->filterL);
-            Filter_Process(&voice->lastSample[1], &voice->filterR);
-
-            out_l += voice->lastSample[0];
-            out_r += voice->lastSample[1];
-            voice->lastSample[0] = 0.0f;
-            voice->lastSample[1] = 0.0f;
         }
     }
 
     /*
      * process main filter
      */
-    Filter_Process(&out_l, &mainFilterL);
-    Filter_Process(&out_r, &mainFilterR);
-
-
+    Filter_Process_Buffer(left, &mainFilterL, len);
+    Filter_Process_Buffer(right, &mainFilterR, len);
 
     /*
      * reduce level a bit to avoid distortion
      */
-    out_l *= 0.4f * 0.25f;
-    out_r *= 0.4f * 0.25f;
+    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
+    {
+        left[i] *= 0.4f * 0.25f;
+        right[i] *= 0.4f * 0.25f;
+    }
 
-    /*
-     * finally output our samples
-     */
-    *left = out_l;
-    *right = out_r;
+#ifdef LIMITER_ACTIVE
+    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
+    {
+        left[i] = left[i] > 0.5f ? 0.5 : left[i];
+        left[i] = left[i] < -0.5f ? -0.5 : left[i];
+        right[i] = right[i] > 0.5f ? 0.5 : right[i];
+        right[i] = right[i] < -0.5f ? -0.5 : right[i];
+    }
+#endif
 }
 
 struct oscillatorT *getFreeOsc()
@@ -678,7 +599,7 @@ struct oscillatorT *getFreeOsc()
     return NULL;
 }
 
-struct notePlayerT *getFreeVoice()
+static struct notePlayerT *getFreeVoice(void)
 {
     for (int i = 0; i < MAX_POLY_VOICE ; i++)
     {
@@ -688,13 +609,6 @@ struct notePlayerT *getFreeVoice()
         }
     }
     return NULL;
-}
-
-inline void Filter_Reset(struct filterProcT *filter)
-{
-    filter->w[0] = 0.0f;
-    filter->w[1] = 0.0f;
-    filter->w[2] = 0.0f;
 }
 
 inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
