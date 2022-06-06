@@ -80,7 +80,7 @@ void setup()
 
     Serial.println();
 
-    Serial.printf("esp32_basic_synth  Copyright (C) 2021  Marcel Licence\n");
+    Serial.printf("esp32_basic_synth  Copyright (c) 2022  Marcel Licence\n");
     Serial.printf("This program comes with ABSOLUTELY NO WARRANTY;\n");
     Serial.printf("This is free software, and you are welcome to redistribute it\n");
     Serial.printf("under certain conditions; \n");
@@ -147,6 +147,13 @@ void setup()
 
 #ifdef NOTE_ON_AFTER_SETUP /* activate this line to get a tone on startup to test the DAC */
     Synth_NoteOn(0, 64, 1.0f);
+#endif
+
+#ifdef MIDI_STREAM_PLAYER_ENABLED
+    MidiStreamPlayer_Init();
+
+    char midiFile[] = "/song.mid";
+    MidiStreamPlayer_PlayMidiFile_fromLittleFS(midiFile, 1);
 #endif
 
 #if (defined ADC_TO_MIDI_ENABLED) || (defined MIDI_VIA_USB_ENABLED) || (defined OLED_OSC_DISP_ENABLED)
@@ -339,6 +346,11 @@ void loop()
      * - we divide our operation by 8
      */
     Midi_Process();
+
+#ifdef MIDI_STREAM_PLAYER_ENABLED
+    MidiStreamPlayer_Tick(SAMPLE_BUFFER_SIZE);
+#endif
+
 #ifdef MIDI_VIA_USB_ENABLED
     UsbMidi_ProcessSync();
 #endif

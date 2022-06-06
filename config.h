@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Marcel Licence
+ * Copyright (c) 2022 Marcel Licence
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,12 @@
 #define CONFIG_H_
 
 
-#define NOTE_ON_AFTER_SETUP /* used to get a test tone without MIDI input. Can be deactivated */
+#ifdef __CDT_PARSER__
+#include <cdt.h>
+#endif
+
+
+//#define NOTE_ON_AFTER_SETUP /* used to get a test tone without MIDI input. Can be deactivated */
 
 //#define OUTPUT_SAW_TEST /* enable this to test the codec only. Should result in a saw wav with length of SAMPLE_BFFER_SIZE samples */
 
@@ -95,6 +100,10 @@
 #define ARP_MODULE_ENABLED /* allow using arp module */
 #define MIDI_SYNC_MASTER /* turn this off to use external midi clock signal */
 #define MIDI_CTRL_ENABLED /* used for virtual split point */
+
+
+//#define MIDI_STREAM_PLAYER_ENABLED /* activate this to use the midi stream playback module */
+
 
 /*
  * include the board configuration
