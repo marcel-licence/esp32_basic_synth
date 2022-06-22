@@ -342,7 +342,6 @@ void Synth_Init()
     Filter_Coeff_Init(mainFilterL.filterCoeff);
 
     Filter_Calculate(1.0f, 1.0f, &filterGlobalC);
-    Filter_CalculateNone(&filterGlobalC);
 
     for (int i = 0; i < CHANNEL_MAX; i++)
     {
