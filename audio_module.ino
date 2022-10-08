@@ -374,8 +374,10 @@ void Audio_Output(const float *left, const float *right)
 #ifdef OUTPUT_SAW_TEST
     for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
     {
-        left[i] = ((float)i) / ((float)SAMPLE_BUFFER_SIZE);
-        right[i] = ((float)i) / ((float)SAMPLE_BUFFER_SIZE);
+        left[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
+        right[i] = ((float)i * 2.0f) / ((float)SAMPLE_BUFFER_SIZE);
+        left[i] -= 0.5f;
+        right[i] -= 0.5f;
     }
 #endif
 

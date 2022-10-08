@@ -33,8 +33,13 @@
  * @author Marcel Licence
  * @date 12.05.2021
  *
- * @brief  this file includes a simple blink task implementation
+ * @brief this file includes a simple blink task implementation
  */
+
+
+#ifdef __CDT_PARSER__
+#include "cdt.h"
+#endif
 
 
 #ifdef BLINK_LED_PIN
@@ -60,7 +65,7 @@ void Blink_Process(void)
     ledOn = !ledOn;
 }
 
-void Blink_Pulse(uint8_t cnt)
+void Blink_Fast(uint8_t cnt)
 {
     delay(500);
     for (int i = 0; i < cnt; i++)
@@ -72,5 +77,18 @@ void Blink_Pulse(uint8_t cnt)
     }
 }
 
-#endif
+void Blink_Slow(uint8_t cnt)
+{
+    delay(500);
+    for (int i = 0; i < cnt; i++)
+    {
 
+        digitalWrite(BLINK_LED_PIN, HIGH);
+        delay(200);
+        digitalWrite(BLINK_LED_PIN, LOW);
+        delay(100);
+    }
+}
+
+
+#endif

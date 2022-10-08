@@ -54,7 +54,10 @@
 
 //#define NOTE_ON_AFTER_SETUP /* used to get a test tone without MIDI input. Can be deactivated */
 
-//#define OUTPUT_SAW_TEST /* enable this to test the codec only. Should result in a saw wav with length of SAMPLE_BFFER_SIZE samples */
+
+#define SERIAL_BAUDRATE 115200
+
+//#define OUTPUT_SAW_TEST /*!< enable this to test the codec only. Should result in a saw wav with length of SAMPLE_BFFER_SIZE samples */
 
 /*
  * you can select one of the pre-defined boards

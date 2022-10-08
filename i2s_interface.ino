@@ -34,6 +34,8 @@
  * @date 13.10.2021
  *
  * @brief  this file includes all required function to setup and drive the i2s interface
+ *         You can use the internal DAC by defining I2S_NODAC in your configuration
+ * @see https://youtu.be/zoajxQ7X0Gk
  */
 
 
@@ -45,6 +47,14 @@
 #ifdef ESP32
 
 #include <driver/i2s.h>
+
+
+#ifdef I2S_NODAC
+#ifndef SOC_I2S_SUPPORTS_DAC
+#error internal dac not supported by your current configuration
+/* this message appears in case you cannot use the I2S interface to push audio data to the internal DAC */
+#endif
+#endif
 
 
 /*
@@ -75,6 +85,29 @@ bool i2s_write_sample_32ch2(uint64_t sample)
         return false;
     }
 }
+
+#ifdef SAMPLE_SIZE_24BIT
+
+bool i2s_write_sample_24ch2(uint8_t *sample);
+
+bool i2s_write_sample_24ch2(uint8_t *sample)
+{
+    static size_t bytes_written1 = 0;
+    static size_t bytes_written2 = 0;
+    i2s_write(i2s_port_number, (const char *)&sample[1], 3, &bytes_written1, portMAX_DELAY);
+    i2s_write(i2s_port_number, (const char *)&sample[5], 3, &bytes_written2, portMAX_DELAY);
+
+    if ((bytes_written1 + bytes_written2) > 0)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+#endif
 
 bool i2s_write_stereo_samples(const float *fl_sample, const float *fr_sample)
 {
@@ -222,8 +255,29 @@ bool i2s_write_stereo_samples_buff(const float *fl_sample, const float *fr_sampl
          * using RIGHT_LEFT format
          */
 #ifdef SAMPLE_SIZE_16BIT
+#ifdef I2S_NODAC
+        float fr_sampl = fr_sample[n];
+        float fl_sampl = fl_sample[n];
+
+        /* shift signal */
+        fr_sampl *= 0.5;
+        fl_sampl *= 0.5;
+        fr_sampl += 0.5f;
+        fl_sampl += 0.5f;
+
+        /* limit */
+        fr_sampl = fr_sampl > 1.0f ? 1.0f : fr_sampl;
+        fl_sampl = fl_sampl > 1.0f ? 1.0f : fl_sampl;
+        fr_sampl = fr_sampl < 0.0f ? 0.0f : fr_sampl;
+        fl_sampl = fl_sampl < 0.0f ? 0.0f : fl_sampl;
+
+        /* convert */
+        sampleDataU[n].ch[0] = uint16_t(fl_sampl * 0xFFFF); /* DAC_1 */
+        sampleDataU[n].ch[1] = uint16_t(fr_sampl * 0xFFFF); /* DAC_2 */
+#else
         sampleDataU[n].ch[0] = int16_t(fr_sample[n] * 16383.0f); /* some bits missing here */
         sampleDataU[n].ch[1] = int16_t(fl_sample[n] * 16383.0f);
+#endif
 #endif
 #ifdef SAMPLE_SIZE_32BIT
         sampleDataU[n].ch[0] = int32_t(fr_sample[n] * 1073741823.0f); /* some bits missing here */
@@ -237,7 +291,12 @@ bool i2s_write_stereo_samples_buff(const float *fl_sample, const float *fr_sampl
 #ifdef CYCLE_MODULE_ENABLED
     calcCycleCountPre();
 #endif
+#ifdef SAMPLE_SIZE_16BIT
     i2s_write(i2s_port_number, (const char *)&sampleDataU[0].sample, 4 * buffLen, &bytes_written, portMAX_DELAY);
+#endif
+#ifdef SAMPLE_SIZE_32BIT
+    i2s_write(i2s_port_number, (const char *)&sampleDataU[0].sample, 8 * buffLen, &bytes_written, portMAX_DELAY);
+#endif
 #ifdef CYCLE_MODULE_ENABLED
     calcCycleCount();
 #endif
@@ -312,6 +371,24 @@ void i2s_read_stereo_samples_buff(float *fl_sample, float *fr_sample, const int 
 /*
  * i2s configuration
  */
+#ifdef I2S_NODAC
+static const i2s_config_t i2s_configuration =
+{
+    .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_DAC_BUILT_IN),
+    .sample_rate = SAMPLE_RATE * 1,
+    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,  // only the top 8 bits will actually be used by the internal DAC, but using 8 bits straight away seems buggy
+    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,  // always use stereo output. mono seems to be buggy, and the overhead is insignifcant on the ESP32
+    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB),  // this appears to be the correct setting for internal DAC and PT8211, but not for other dacs
+    .intr_alloc_flags = 0, // default interrupt priority
+    .dma_buf_count = 8,    // 8*128 bytes of buffer corresponds to 256 samples (2 channels, see above, 2 bytes per sample per channel)
+    .dma_buf_len = 64,
+#ifdef I2S_USE_APLL
+    .use_apll = true,
+#else
+    .use_apll = false,
+#endif
+};
+#else
 i2s_config_t i2s_configuration =
 {
 #ifdef I2S_DIN_PIN
@@ -354,9 +431,11 @@ i2s_config_t i2s_configuration =
     .use_apll = false,
 #endif
 };
+#endif
 
 
 #ifdef I2S_NODAC
+#ifdef ESP8266
 i2s_pin_config_t pins =
 {
     .bck_io_num = I2S_PIN_NO_CHANGE,
@@ -364,6 +443,7 @@ i2s_pin_config_t pins =
     .data_out_num = I2S_NODAC_OUT_PIN,
     .data_in_num = I2S_PIN_NO_CHANGE
 };
+#endif
 #else
 i2s_pin_config_t pins =
 {
@@ -381,13 +461,24 @@ i2s_pin_config_t pins =
 void setup_i2s()
 {
     i2s_driver_install(i2s_port_number, &i2s_configuration, 0, NULL);
+#ifdef I2S_NODAC
+    i2s_set_pin(i2s_port_number, NULL);
+    i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
+    i2s_zero_dma_buffer(i2s_port_number);
+#else
     i2s_set_pin(I2S_NUM_0, &pins);
+#endif
     i2s_set_sample_rates(i2s_port_number, SAMPLE_RATE);
     i2s_start(i2s_port_number);
 #ifdef ES8388_ENABLED
     REG_WRITE(PIN_CTRL, 0xFFFFFFF0);
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
 #endif
+    Serial.printf("I2S configured using following pins:\n");
+    Serial.printf("    BCLK,BCK: %d\n", pins.bck_io_num);
+    Serial.printf("    WCLK,LCK: %d\n", pins.ws_io_num);
+    Serial.printf("    DOUT: %d\n", pins.data_out_num);
+    Serial.printf("    DIN: %d\n", pins.data_in_num);
 }
 
 #endif /* ESP32 */

@@ -53,6 +53,10 @@
  * a uart compatible signal
  */
 
+#ifndef MIDI_SERIAL_BAUDRATE
+#define MIDI_SERIAL_BAUDRATE    SERIAL_BAUDRATE
+#endif
+
 #ifndef MIDI_SERIAL1_BAUDRATE
 #define MIDI_SERIAL1_BAUDRATE   31250
 #endif
@@ -89,10 +93,15 @@ struct midi_port_s
 HardwareSerial Serial2(USART1);
 #endif
 
+#if (defined ARDUINO_GENERIC_F407VGTX) // || (defined ARDUINO_DISCO_F407VG)
+HardwareSerial Serial2(USART2); /* PA3 */
+#endif
+
+#if 0
 #ifdef ARDUINO_GENERIC_F407VGTX
 HardwareSerial Serial2(USART3); /* PB11 */
 #endif
-
+#endif
 
 #ifdef MIDI_PORT_ACTIVE
 struct midi_port_s MidiPort;
@@ -123,6 +132,15 @@ struct midiControllerMapping
     uint8_t user_data;
 };
 
+#ifdef MIDI_MAP_FLEX_ENABLED
+struct midiMapLookUpEntry
+{
+    const char *desc;
+    struct midiControllerMapping *controlMap;
+    int controlMapSize;
+};
+#endif
+
 struct midiMapping_s
 {
     void (*rawMsg)(uint8_t *msg);
@@ -142,15 +160,31 @@ struct midiMapping_s
 
     struct midiControllerMapping *controlMapping;
     int mapSize;
+
+#ifdef MIDI_MAP_FLEX_ENABLED
+    /* the following map can be changed  during runtime */
+    struct midiControllerMapping *controlMapping_flex;
+    int mapSize_flex;
+#endif
 };
 
-extern struct midiMapping_s midiMapping; /* definition in z_config.ino */
+/*
+ * following variables shall be defined in z_config.ino
+ */
+extern struct midiMapping_s midiMapping;
+#ifdef MIDI_MAP_FLEX_ENABLED
+extern struct midiMapLookUpEntry midiMapLookUp[];
+extern int midiMapLookUpCnt;
+#endif
 
 /* constant to normalize midi value to 0.0 - 1.0f */
 #define NORM127MUL  0.007874f
 
 inline void Midi_NoteOn(uint8_t ch, uint8_t note, uint8_t vel)
 {
+#ifdef MIDI_BLE_ENABLED
+    Ble_NoteOn(ch, note, vel);
+#endif
     if (vel > 127)
     {
         /* we will end up here in case of problems with the MIDI connection */
@@ -170,9 +204,34 @@ inline void Midi_NoteOn(uint8_t ch, uint8_t note, uint8_t vel)
 
 inline void Midi_NoteOff(uint8_t ch, uint8_t note)
 {
+#ifdef MIDI_BLE_ENABLED
+    Ble_NoteOff(ch, note);
+#endif
     if (midiMapping.noteOff != NULL)
     {
         midiMapping.noteOff(ch, note);
+    }
+}
+
+inline void Midi_CC_Map(uint8_t channel, uint8_t data1, uint8_t data2, struct midiControllerMapping *controlMapping, int mapSize)
+{
+    for (int i = 0; i < mapSize; i++)
+    {
+        if ((controlMapping[i].channel == channel) && (controlMapping[i].data1 == data1))
+        {
+            if (controlMapping[i].callback_mid != NULL)
+            {
+                controlMapping[i].callback_mid(channel, data1, data2);
+            }
+            if (controlMapping[i].callback_val != NULL)
+            {
+#ifdef MIDI_FMT_INT
+                controlMapping[i].callback_val(controlMapping[i].user_data, data2);
+#else
+                controlMapping[i].callback_val(controlMapping[i].user_data, (float)data2 * NORM127MUL);
+#endif
+            }
+        }
     }
 }
 
@@ -181,24 +240,14 @@ inline void Midi_NoteOff(uint8_t ch, uint8_t note)
  */
 inline void Midi_ControlChange(uint8_t channel, uint8_t data1, uint8_t data2)
 {
-    for (int i = 0; i < midiMapping.mapSize; i++)
-    {
-        if ((midiMapping.controlMapping[i].channel == channel) && (midiMapping.controlMapping[i].data1 == data1))
-        {
-            if (midiMapping.controlMapping[i].callback_mid != NULL)
-            {
-                midiMapping.controlMapping[i].callback_mid(channel, data1, data2);
-            }
-            if (midiMapping.controlMapping[i].callback_val != NULL)
-            {
-#ifdef MIDI_FMT_INT
-                midiMapping.controlMapping[i].callback_val(midiMapping.controlMapping[i].user_data, data2);
-#else
-                midiMapping.controlMapping[i].callback_val(midiMapping.controlMapping[i].user_data, (float)data2 * NORM127MUL);
+#ifdef MIDI_BLE_ENABLED
+    Ble_ControlChange(channel, data1, data2);
 #endif
-            }
-        }
-    }
+
+    Midi_CC_Map(channel, data1, data2, midiMapping.controlMapping, midiMapping.mapSize);
+#ifdef MIDI_MAP_FLEX_ENABLED
+    Midi_CC_Map(channel, data1, data2, midiMapping.controlMapping_flex, midiMapping.mapSize_flex);
+#endif
 
     if (data1 == 1)
     {
@@ -215,7 +264,11 @@ inline void Midi_ControlChange(uint8_t channel, uint8_t data1, uint8_t data2)
 
 inline void Midi_PitchBend(uint8_t ch, uint16_t bend)
 {
-    float value = ((float)bend - 8192.0f) * (1.0f / 8192.0f) - 1.0f;
+#ifdef MIDI_BLE_ENABLED
+    Ble_PitchBend(ch, bend);
+#endif
+
+    float value = ((float)bend - 8192.0f) * (1.0f / 8192.0f);
     if (midiMapping.pitchBend != NULL)
     {
         midiMapping.pitchBend(ch, value);
@@ -224,6 +277,10 @@ inline void Midi_PitchBend(uint8_t ch, uint16_t bend)
 
 inline void Midi_SongPositionPointer(uint16_t pos)
 {
+#ifdef MIDI_BLE_ENABLED
+    Ble_SongPos(pos);
+#endif
+
     if (midiMapping.songPos != NULL)
     {
         midiMapping.songPos(pos);
@@ -259,7 +316,7 @@ inline void Midi_HandleShortMsg(uint8_t *data, uint8_t cable __attribute__((unus
         break;
     /* pitchbend */
     case 0xe0:
-        Midi_PitchBend(ch, ((((uint16_t)data[1])) + ((uint16_t)data[2] << 8)));
+        Midi_PitchBend(ch, ((((uint16_t)data[1])) + ((uint16_t)data[2] << 7)));
         break;
     /* song position pointer */
     case 0xf2:
@@ -288,6 +345,7 @@ void Midi_Setup()
 {
 #ifdef MIDI_RECV_FROM_SERIAL
     MidiPort.serial = &Serial;
+    Serial.printf("MIDI listen on Serial with %d baud\n", MIDI_SERIAL_BAUDRATE);
 #endif /* MIDI_RECV_FROM_SERIAL */
 
 #ifdef MIDI_PORT_ACTIVE
@@ -348,6 +406,10 @@ void Midi_Setup()
     Midi_PortSetup(&MidiPort2);
     Serial.printf("Setup MidiPort2 using Serial2\n");
 #endif /* MIDI_PORT2_ACTIVE */
+
+#ifdef USB_MIDI_ENABLED
+    UbsMidiSetup();
+#endif
 }
 
 void Midi_CheckMidiPort(struct midi_port_s *port)
@@ -433,20 +495,21 @@ void Midi_Process()
 #ifdef MIDI_PORT2_ACTIVE
     Midi_CheckMidiPort(&MidiPort2);
 #endif
+#ifdef USB_MIDI_ENABLED
+    UbsMidiLoop();
+#endif
 }
 
 #ifndef ARDUINO_SEEED_XIAO_M0
 #ifndef SWAP_SERIAL
+#ifdef MIDI_TX2_PIN
 void Midi_SendShortMessage(uint8_t *msg)
 {
-#ifdef MIDI_TX2_PIN
     MidiPort2.serial->write(msg, 3);
-#endif
 }
 
 void Midi_SendRaw(uint8_t *msg)
 {
-#ifdef MIDI_TX2_PIN
     /* sysex */
     if (msg[0] == 0xF0)
     {
@@ -461,8 +524,25 @@ void Midi_SendRaw(uint8_t *msg)
     {
         MidiPort2.serial->write(msg, 3);
     }
-#endif
 }
+#endif /* MIDI_TX2_PIN */
 #endif
+#endif
+
+#ifdef MIDI_MAP_FLEX_ENABLED
+void Midi_SetMidiMap(struct midiControllerMapping *controlMapping, int mapSize)
+{
+    midiMapping.controlMapping_flex = controlMapping;
+    midiMapping.mapSize_flex = mapSize;
+}
+
+void Midi_SetMidiMapByIndex(uint8_t index, float value)
+{
+    if (index < midiMapLookUpCnt)
+    {
+        Midi_SetMidiMap(midiMapLookUp[index].controlMap, midiMapLookUp[index].controlMapSize);
+        Serial.printf("Midi map %s selected\n", midiMapLookUp[index].desc);
+    }
+}
 #endif
 

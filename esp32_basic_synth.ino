@@ -76,7 +76,7 @@ void setup()
      */
     delay(500);
 
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUDRATE);
 
     Serial.println();
 

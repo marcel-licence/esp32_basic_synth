@@ -65,12 +65,7 @@ extern SdFatFs fatFs;
 #define FST fs::FS
 #endif
 
-#define MIDI_FS_LITTLE_FS   0
-#define MIDI_FS_SD_MMC  1
-
-
-#define FORMAT_LITTLEFS_IF_FAILED true
-
+#ifdef ESP32
 
 #include <FS.h>
 #ifdef ARDUINO_RUNNING_CORE /* tested with arduino esp32 core version 2.0.2 */
@@ -80,6 +75,29 @@ extern SdFatFs fatFs;
 #define LittleFS LITTLEFS
 #endif
 #include <SD_MMC.h>
+
+#define MIDI_FS_LITTLE_FS   0
+#ifdef MIDI_STREAM_PLAYER_SD_MMC_ENABLED
+#define MIDI_FS_SD_MMC  1
+#endif
+
+#endif
+
+#ifdef ESP8266
+#include <FS.h>
+#include <LittleFS.h> /* Using library LittleFS at version 2.0.0 from https://github.com/espressif/arduino-esp32 */
+#define MIDI_FS_LITTLE_FS   0
+#endif
+
+
+#ifdef ESP8266_DEPRECATED /* used to try using deprecated SPIFFS */
+#include <SPIFFS.h>
+#define MIDI_FS_SPIFFS   2
+#endif
+
+
+#define FORMAT_LITTLEFS_IF_FAILED true
+
 
 #include <ml_midi_file_stream.h>
 
@@ -120,7 +138,7 @@ uint8_t MIDI_open(const char *path, const char *mode)
         Serial.println("LITTLEFS Mount Failed");
         return 0;
     }
-    midiFile = LittleFS.open(path);
+    midiFile = LittleFS.open(path, "r");
     if (!midiFile)
     {
         Serial.println("- failed to open file");
@@ -137,7 +155,7 @@ uint8_t MIDI_open(const char *path, const char *mode)
 int MIDI_read(void *buf, uint8_t unused, size_t size, struct file_access_f *ff)
 {
     File *file = &midiFile;//ff->file;
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         ((uint8_t *)buf)[i] = file->read();
         ff->file ++;
@@ -172,6 +190,7 @@ int MIDI_tell(struct file_access_f *ff)
 #if 0
     File *file = &midiFile;//ff->file;
     return file->size();
+    return file->position(); /* Returns the current position inside the file, in bytes. */
 #else
     return ff->file - 1;
 #endif
@@ -196,8 +215,15 @@ char MIDI_seek(struct file_access_f *ff, int pos, uint8_t mode)
 
 void MidiStreamPlayer_Init()
 {
+#ifdef MIDI_FS_SPIFFS
+    MidiStreamPlayer_ListFiles(MIDI_FS_SPIFFS);
+#endif
+#ifdef MIDI_FS_LITTLE_FS
     MidiStreamPlayer_ListFiles(MIDI_FS_LITTLE_FS);
+#endif
+#ifdef MIDI_FS_SD_MMC
     MidiStreamPlayer_ListFiles(MIDI_FS_SD_MMC);
+#endif
 }
 
 void MidiStreamPlayer_PlayFile(char *midi_filename)
@@ -209,7 +235,7 @@ static void listDir(FST &fs, const char *dirname, uint8_t levels)
 {
     Serial.printf("Listing directory: %s\n", dirname);
 
-    File root = fs.open(dirname);
+    File root = fs.open(dirname, "r");
     if (!root)
     {
         Serial.println("Failed to open directory");
@@ -460,6 +486,23 @@ void MidiStreamPlayer_ListFiles(uint8_t filesystem)
 {
     switch (filesystem)
     {
+#ifdef MIDI_FS_SPIFFS
+    case MIDI_FS_SPIFFS:
+        {
+            if (!SPIFFS.begin(FORMAT_LITTLEFS_IF_FAILED))
+            {
+                Serial.println("SPIFFS Mount Failed");
+                return;
+            }
+            else
+            {
+                Serial.println("SPIFFS opened");
+            }
+            listDir(SPIFFS, "/", 3);
+        }
+        break;
+#endif
+#ifdef MIDI_FS_LITTLE_FS
     case MIDI_FS_LITTLE_FS:
         {
             if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED))
@@ -467,9 +510,15 @@ void MidiStreamPlayer_ListFiles(uint8_t filesystem)
                 Serial.println("LittleFS Mount Failed");
                 return;
             }
+            else
+            {
+                Serial.println("LittleFS opened");
+            }
             listDir(LittleFS, "/", 3);
-            break;
         }
+        break;
+#endif
+#ifdef MIDI_FS_SD_MMC
     case MIDI_FS_SD_MMC:
         {
             if (!SD_MMC.begin())
@@ -484,6 +533,8 @@ void MidiStreamPlayer_ListFiles(uint8_t filesystem)
                 Serial.println("No SD_MMC card attached");
                 return;
             }
+
+            Serial.println("SD_MMC opened");
 
             Serial.print("SD_MMC Card Type: ");
             if (cardType == CARD_MMC)
@@ -509,6 +560,7 @@ void MidiStreamPlayer_ListFiles(uint8_t filesystem)
             listDir(SD_MMC, "/", 0);
         }
         break;
+#endif
     }
 }
 

@@ -42,6 +42,33 @@ struct adc_to_midi_mapping_s
     void(*callback)(uint8_t ch, uint8_t cc, uint8_t value);
 };
 
+/*
+ * the following structure is for directly linking an ADC input to
+ * a control change with a specific channel number and control number
+ *
+ * adcToMidiLookUp shall be defined as an array with the size of ADC_TO_MIDI_LOOKUP_SIZE
+ *
+ * the entries are directly mapped to the ADC input
+ *
+ * example:
+ * in case ADC_TO_MIDI_LOOKUP_SIZE = 4 you can define 4 entries.
+ * struct adc_to_midi_s adcToMidiLookUp[ADC_TO_MIDI_LOOKUP_SIZE] =
+ * {
+ *     {0, 0x10},
+ *     {0, 0x11},
+ *     {0, 0x12},
+ *     {1, 0x13},
+ * };
+ *
+ * The ADC input 0 will be mapped to channel 0, control change number 0x10 (16).
+ * The connected function should be defined in the MIDI map finally to get an effect.
+ *
+ * ADC input 1 will be mapped to channel 0, control change number 0x11 (17)
+ * ADC input 2 will be mapped to channel 0, control change number 0x12 (18)
+ * ADC input 3 will be mapped to channel 1, control change number 0x13 (19)
+ *
+ * Finally there is no direct linking from ADC to the synthesizer. It creates only the control change messages.
+ */
 extern struct adc_to_midi_s adcToMidiLookUp[]; /* definition in z_config.ino */
 extern struct adc_to_midi_mapping_s adcToMidiMapping;
 
