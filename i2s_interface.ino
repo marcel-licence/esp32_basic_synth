@@ -474,11 +474,15 @@ void setup_i2s()
     REG_WRITE(PIN_CTRL, 0xFFFFFFF0);
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
 #endif
+#ifndef I2S_NODAC
     Serial.printf("I2S configured using following pins:\n");
     Serial.printf("    BCLK,BCK: %d\n", pins.bck_io_num);
     Serial.printf("    WCLK,LCK: %d\n", pins.ws_io_num);
     Serial.printf("    DOUT: %d\n", pins.data_out_num);
     Serial.printf("    DIN: %d\n", pins.data_in_num);
+#else
+    Serial.printf("I2S configured using internal DAC (DAC_1, DAC_2 as output)\n");
+#endif
 }
 
 #endif /* ESP32 */
