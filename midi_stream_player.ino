@@ -48,6 +48,7 @@
 
 #ifdef MIDI_STREAM_PLAYER_ENABLED
 
+//#define MIDI_STREAM_PLAYER_SD_MMC_ENABLED
 
 //#define MIDI_STREAM_PLAYER_DATA_DUMP /*!< optional to dump event data from midi file */
 

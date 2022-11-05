@@ -302,7 +302,7 @@ void Synth_SongPosition(uint16_t pos)
     }
 }
 
-void Synth_SongPosReset(uint8_t unused, float var)
+void Synth_SongPosReset(uint8_t unused __attribute__((unused)), float var)
 {
     if (var > 0)
     {
@@ -388,12 +388,17 @@ void loop()
      * add some mono reverb
      */
     Reverb_Process(fl_sample, SAMPLE_BUFFER_SIZE);
+
+#ifdef ESP32
     memcpy(fr_sample,  fl_sample, sizeof(fr_sample));
 
     /*
      * Output the audio
      */
     Audio_Output(fl_sample, fr_sample);
+#else /* project was made for ESP32 but it might work on other devices too */
+    Audio_OutputMono(fl_sample);
+#endif
 
 #ifdef OLED_OSC_DISP_ENABLED
     ScopeOled_AddSamples(fl_sample, fr_sample, SAMPLE_BUFFER_SIZE);
@@ -443,7 +448,8 @@ void Arp_Status_ValueChangedFloat(const char *msg, float value)
     Status_ValueChangedFloat(msg, value);
 }
 
-void Arp_Cb_Step(uint8_t step)
+/* not used yet */
+void Arp_Cb_Step(uint8_t step __attribute__((unused)))
 {
     /* ignore */
 }

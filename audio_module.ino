@@ -64,7 +64,7 @@
 #include "DaisyDuino.h"
 #endif
 
-#ifdef ARDUINO_RASPBERRY_PI_PICO
+#if (defined ARDUINO_RASPBERRY_PI_PICO) || (defined ARDUINO_GENERIC_RP2040)
 #include <I2S.h>
 #endif
 
@@ -117,7 +117,7 @@ void Audio_Setup(void)
     pinMode(DAC0, OUTPUT);
 #endif
 
-#ifdef ARDUINO_RASPBERRY_PI_PICO
+#if (defined ARDUINO_RASPBERRY_PI_PICO) || (defined ARDUINO_GENERIC_RP2040)
     if (!I2S.begin(SAMPLE_RATE))
     {
         Serial.println("Failed to initialize I2S!");
@@ -228,6 +228,16 @@ void ProcessAudio(uint16_t *buff, size_t len)
 
 #endif
 
+void Audio_OutputMono(const float *samples)
+{
+    int32_t sampleI32[SAMPLE_BUFFER_SIZE];
+    for (int i = 0; i < SAMPLE_BUFFER_SIZE; i++)
+    {
+        sampleI32[i] = int32_t(samples[i] * 1073741823.0f); /* some bits missing here */
+    }
+    Audio_OutputMono(sampleI32);
+}
+
 void Audio_OutputMono(const int32_t *samples)
 {
 #ifdef ESP8266
@@ -324,7 +334,7 @@ void Audio_OutputMono(const int32_t *samples)
     memcpy(u32buf, samples, sizeof(int32_t)*SAMPLE_BUFFER_SIZE);
 #endif /* ARDUINO_SEEED_XIAO_M0 */
 
-#ifdef ARDUINO_RASPBERRY_PI_PICO
+#if (defined ARDUINO_RASPBERRY_PI_PICO) || (defined ARDUINO_GENERIC_RP2040)
     /*
      * @see https://arduino-pico.readthedocs.io/en/latest/i2s.html
      * @see https://www.waveshare.com/pico-audio.htm for connections
@@ -347,7 +357,7 @@ void Audio_OutputMono(const int32_t *samples)
     memcpy(u16int_buf, u16int, sizeof(u16int));
     I2S.write(u16int_buf, sizeof(u16int));
 #endif
-#endif /* ARDUINO_RASPBERRY_PI_PICO */
+#endif /* ARDUINO_RASPBERRY_PI_PICO, ARDUINO_GENERIC_RP2040 */
 
 #ifdef ARDUINO_GENERIC_F407VGTX
     /*
