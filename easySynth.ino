@@ -803,7 +803,7 @@ inline void Synth_NoteOn(uint8_t ch, uint8_t note, float vel)
 
 inline void Synth_NoteOff(uint8_t ch, uint8_t note)
 {
-    for (int j = 0; j < chCfg[ch].noteCnt; j++)
+    for (uint32_t j = 0; j < chCfg[ch].noteCnt; j++)
     {
         if (chCfg[ch].noteStack[j] == note)
         {
@@ -883,7 +883,7 @@ void Synth_SetCurCh(uint8_t ch, float value)
     }
 }
 
-void Synth_ToggleMono(uint8_t ch, float value)
+void Synth_ToggleMono(uint8_t ch __attribute__((unused)), float value)
 {
     if (value > 0)
     {

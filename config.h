@@ -59,6 +59,7 @@
 
 //#define OUTPUT_SAW_TEST /*!< enable this to test the codec only. Should result in a saw wav with length of SAMPLE_BFFER_SIZE samples */
 
+#ifdef ESP32
 /*
  * you can select one of the pre-defined boards
  * look into ML_SynthTools in ml_boards.h for more information
@@ -150,6 +151,33 @@
 
 //#define BLE_MIDI
 //#define BLE_MIDI_HOST "MIDI HOST"
+
+#endif /* ESP32 */
+
+
+/*
+ * Configuration for
+ * Board: "Rapsberry Pi Pico"
+ *
+ * BCK: 26
+ * DIN: 28
+ * LCK: 27  (always BCK + 1)
+ *
+ * MIDI_RX: 12 (GP9)
+ *
+ * Pinout @see https://www.raspberrypi-spy.co.uk/2021/01/pi-pico-pinout-and-power-pins/#prettyPhoto
+ */
+#ifdef ARDUINO_RASPBERRY_PI_PICO
+
+#define LED_PIN LED_BUILTIN
+#define SAMPLE_BUFFER_SIZE  48
+#define SAMPLE_RATE  44100
+
+#define MIDI_PORT2_ACTIVE
+
+#endif /* ARDUINO_RASPBERRY_PI_PICO */
+
+
 
 #endif /* CONFIG_H_ */
 
