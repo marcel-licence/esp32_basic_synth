@@ -64,9 +64,9 @@
  * look into ML_SynthTools in ml_boards.h for more information
  * @see https://github.com/marcel-licence/ML_SynthTools
  */
-//#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
+#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
 //#define BOARD_ESP32_AUDIO_KIT_AC101 /* activate this when using the ESP32 Audio Kit v2.2 with the AC101 codec */
-#define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
+//#define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
 //#define BOARD_ESP32_DOIT /* activate this when using the DOIT ESP32 DEVKIT V1 board */
 
 /* can be used to pass line in through audio processing to output */
@@ -81,6 +81,8 @@
 /* this variable defines the max length of the delay and also the memory consumption */
 #define MAX_DELAY   (SAMPLE_RATE/2) /* 1/2s -> @ 44100 samples */
 
+//#define PRESSURE_SENSOR_ENABLED
+
 /* you can receive MIDI messages via serial-USB connection */
 /*
  * you could use for example https://projectgus.github.io/hairless-midiserial/
@@ -88,7 +90,7 @@
  */
 #define MIDI_RECV_FROM_SERIAL
 
-/* activate MIDI via USB (please look into usbMidiHost.ino for more information) */
+/* MIDI_VIA_USB_ENABLED activates MIDI via USB (please look into usbMidiHost.ino for more information) */
 //#define MIDI_VIA_USB_ENABLED
 
 /* use this to display a scope on the oled display */
@@ -146,6 +148,8 @@
 #define SAMPLE_SIZE_16BIT /* 32 bit seems not to work at the moment */
 #endif
 
+//#define BLE_MIDI
+//#define BLE_MIDI_HOST "MIDI HOST"
 
 #endif /* CONFIG_H_ */
 

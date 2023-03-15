@@ -193,6 +193,7 @@ struct midiMapping_s midiMapping =
 #endif
     Synth_PitchBend,
     Synth_ModulationWheel,
+    NULL, /* assign program change callback here! */
     Synth_RealTimeMsg,
     Synth_SongPosition,
     edirolMapping,

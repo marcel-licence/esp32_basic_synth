@@ -68,6 +68,18 @@
 #include <ml_scope.h>
 #endif
 
+#include <ml_types.h>
+
+#define ML_SYNTH_INLINE_DECLARATION
+#include <i2s_interface.h>
+#include <i2s_module.h>
+#include <audio_module.h>
+#include <midi_interface.h>
+#include <midi_stream_player.h>
+#include <midi_via_ble.h>
+#include <midi_via_usb.h>
+#undef ML_SYNTH_INLINE_DECLARATION
+
 
 void setup()
 {
@@ -80,11 +92,10 @@ void setup()
 
     Serial.println();
 
-    Serial.printf("esp32_basic_synth  Copyright (c) 2022  Marcel Licence\n");
+    Serial.printf("esp32_basic_synth  Copyright (c) 2023  Marcel Licence\n");
     Serial.printf("This program comes with ABSOLUTELY NO WARRANTY;\n");
     Serial.printf("This is free software, and you are welcome to redistribute it\n");
     Serial.printf("under certain conditions; \n");
-
 
     Serial.printf("Initialize Synth Module\n");
     Synth_Init();
@@ -108,7 +119,8 @@ void setup()
      * The buffer shall be static to ensure that
      * the memory will be exclusive available for the reverb module
      */
-    static float revBuffer[REV_BUFF_SIZE];
+    //static float revBuffer[REV_BUFF_SIZE];
+    static float *revBuffer = (float *)malloc(sizeof(float) * REV_BUFF_SIZE);
     Reverb_Setup(revBuffer);
 
     /*
