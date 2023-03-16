@@ -115,7 +115,8 @@ uint32_t midi_note_to_add50c[MIDI_NOTE_CNT]; /* lookup for detuning */
 #if 0
 float *sine = NULL;
 #else
-float sine[WAVEFORM_CNT];
+float static_sine[WAVEFORM_CNT];
+float *sine = static_sine;
 #endif
 float *saw = NULL;
 float *square = NULL;
