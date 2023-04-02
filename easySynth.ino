@@ -350,8 +350,6 @@ void Synth_Init()
     }
 }
 
-static struct filterCoeffT mainFilt;
-
 static float filtCutoff = 1.0f;
 static float filtReso = 0.5f;
 
