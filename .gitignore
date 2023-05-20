@@ -54,3 +54,7 @@ bld*
 *build
 /.cproject
 /.project
+
+*.bat
+makefile*
+*.mk
