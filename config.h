@@ -65,10 +65,10 @@
  * look into ML_SynthTools in ml_boards.h for more information
  * @see https://github.com/marcel-licence/ML_SynthTools
  */
-#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
+//#define BOARD_ML_V1 /* activate this when using the ML PCB V1 */
 //#define BOARD_ESP32_AUDIO_KIT_AC101 /* activate this when using the ESP32 Audio Kit v2.2 with the AC101 codec */
 //#define BOARD_ESP32_AUDIO_KIT_ES8388 /* activate this when using the ESP32 Audio Kit v2.2 with the ES8388 codec */
-//#define BOARD_ESP32_DOIT /* activate this when using the DOIT ESP32 DEVKIT V1 board */
+#define BOARD_ESP32_DOIT /* activate this when using the DOIT ESP32 DEVKIT V1 board */
 
 /* can be used to pass line in through audio processing to output */
 //#define AUDIO_PASS_THROUGH
@@ -103,9 +103,9 @@
 //#define ADC_TO_MIDI_ENABLED /* this will enable the adc module */
 #define ADC_TO_MIDI_LOOKUP_SIZE 8 /* should match ADC_INPUTS */
 
-#define ARP_MODULE_ENABLED /* allow using arp module */
-#define MIDI_SYNC_MASTER /* turn this off to use external midi clock signal */
-#define MIDI_CTRL_ENABLED /* used for virtual split point */
+//#define ARP_MODULE_ENABLED /* allow using arp module */
+//#define MIDI_SYNC_MASTER /* turn this off to use external midi clock signal */
+//#define MIDI_CTRL_ENABLED /* used for virtual split point */
 
 
 //#define MIDI_STREAM_PLAYER_ENABLED /* activate this to use the midi stream playback module */

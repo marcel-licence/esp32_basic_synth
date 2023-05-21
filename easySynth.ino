@@ -243,6 +243,9 @@ struct notePlayerT voicePlayer[MAX_POLY_VOICE];
 uint32_t voc_act = 0;
 
 
+static float filtCutoff = 1.0f;
+static float filtReso = 0.5f;
+
 
 void Synth_Init()
 {
@@ -342,7 +345,7 @@ void Synth_Init()
     Filter_Proc_Init(&mainFilterR);
     Filter_Coeff_Init(mainFilterL.filterCoeff);
 
-    Filter_Calculate(1.0f, 1.0f, &filterGlobalC);
+    Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
 
     for (int i = 0; i < CHANNEL_MAX; i++)
     {
@@ -350,8 +353,7 @@ void Synth_Init()
     }
 }
 
-static float filtCutoff = 1.0f;
-static float filtReso = 0.5f;
+
 
 static void Synth_ChannelSettingInit(struct channelSetting_s *setting)
 {
@@ -381,7 +383,7 @@ static void Synth_ChannelSettingInit(struct channelSetting_s *setting)
     setting->pitchBendValue = 0.0f;
     setting->pitchMultiplier = 1.0f;
 
-    setting->mono = true;
+    setting->mono = false;
     setting->portAdd = 0.01f; /*!< speed of portamento */
     setting->port = 1.0f;
     setting->noteA = 0;
