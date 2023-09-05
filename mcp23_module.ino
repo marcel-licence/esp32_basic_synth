@@ -52,7 +52,6 @@
 #include <SPI.h>
 
 
-
 /*
  * nice ressource for using mcp and wire
  *
@@ -122,18 +121,18 @@ uint8_t MCP23_ReadReg(uint8_t reg)
 void MCP23_SpiWriteReg(uint8_t reg, uint8_t value)
 {
     digitalWrite(MCP_CS, LOW);
-    SPI.transfer(OPCODEW | (MCP32_ADDR << 1));             // Send the MCP23S17 opcode, chip address, and write bit
-    SPI.transfer(reg);                                   // Send the register we want to write
-    SPI.transfer(value);                                 // Send the byte
+    SPI.transfer(OPCODEW | (MCP32_ADDR << 1)); // Send the MCP23S17 opcode, chip address, and write bit
+    SPI.transfer(reg); // Send the register we want to write
+    SPI.transfer(value); // Send the byte
     digitalWrite(MCP_CS, HIGH);
 }
 
 uint8_t MSP23_SpiReadReg(uint8_t reg)
 {
     digitalWrite(MCP_CS, LOW);
-    SPI.transfer(OPCODER | (MCP32_ADDR << 1));             // Send the MCP23S17 opcode, chip address, and write bit
-    SPI.transfer(reg);                                   // Send the register we want to write
-    uint8_t res = SPI.transfer(0x00);                                 // Send the byte
+    SPI.transfer(OPCODER | (MCP32_ADDR << 1)); // Send the MCP23S17 opcode, chip address, and write bit
+    SPI.transfer(reg); // Send the register we want to write
+    uint8_t res = SPI.transfer(0x00); // Send the byte
     digitalWrite(MCP_CS, HIGH);
     return res;
 }
@@ -177,9 +176,6 @@ void MCP23_Setup(void)
 uint8_t valu8 = 0;
 uint8_t valu8b = 0;
 bool btnDown = false;
-
-
-
 
 
 //#define HALF_CLOCK_PER_STEP1
@@ -260,7 +256,6 @@ void MCP23_Loop()
 
             Status_ValueChangedInt("valu8", valu8);
         }
-
 
 
         if (((lastInput & ENC_CLK_2) != (intcapa & ENC_CLK_2)) && ((intfa & ENC_CLK_2) > 0))
@@ -383,7 +378,6 @@ void MCP23017_TestCS()
     MCP23_WriteReg(GPPUA, GPPU_PULLUP_ENABLED);
     MCP23_WriteReg(GPPUB, GPPU_PULLUP_DISABLED);
     MCP23_WriteReg(IODIRB, IODIR_OUTPUT);
-
 
 
     digitalWrite(SPI_CS, HIGH);

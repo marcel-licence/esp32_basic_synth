@@ -72,7 +72,7 @@ struct adc_to_midi_mapping_s
 extern struct adc_to_midi_s adcToMidiLookUp[]; /* definition in z_config.ino */
 extern struct adc_to_midi_mapping_s adcToMidiMapping;
 
-uint8_t lastSendVal[ADC_TO_MIDI_LOOKUP_SIZE];  /* define ADC_TO_MIDI_LOOKUP_SIZE in top level file */
+uint8_t lastSendVal[ADC_TO_MIDI_LOOKUP_SIZE]; /* define ADC_TO_MIDI_LOOKUP_SIZE in top level file */
 #define ADC_INVERT
 #define ADC_THRESHOLD       (1.0f/200.0f)
 #ifdef ADC_MCP_CTRL_ENABLED

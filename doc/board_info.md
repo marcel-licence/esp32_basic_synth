@@ -7,8 +7,8 @@ Below you will find a list of build which can be configured and should compile w
 <b>Version:</b> 1.0.6<br />
 <b>Board:</b> ESP32 Dev Module<br />
 <br />
-<b>Program storage space:</b> 711178 bytes<br />
-<b>Dynamic memory:</b> 56988 bytes<br />
+<b>Program storage space:</b> 699098 bytes<br />
+<b>Dynamic memory:</b> 49820 bytes<br />
 <br />
 <b>PSRAM:</b> Disabled<br />
 <b>Partition Scheme:</b> Default 4MB with spiffs (1.2MB APP/1.5MB SPIFFS)<br />
@@ -82,8 +82,8 @@ Below you will find a list of build which can be configured and should compile w
 <b>Version:</b> 2.0.7<br />
 <b>Board:</b> ESP32 Dev Module<br />
 <br />
-<b>Program storage space:</b> 774561 bytes<br />
-<b>Dynamic memory:</b> 61516 bytes<br />
+<b>Program storage space:</b> 765761 bytes<br />
+<b>Dynamic memory:</b> 54180 bytes<br />
 <br />
 <b>JTAG Adapter:</b> Disabled<br />
 <b>PSRAM:</b> Disabled<br />

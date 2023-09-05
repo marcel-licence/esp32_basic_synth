@@ -230,6 +230,16 @@ void Status_Process(void)
 /*
  * update top line message including a float value
  */
+void Status_ValueChangedFloat(const char *group, const char *descr, float value)
+{
+    statusMsgShowTimer = 0;
+    sprintf(statusMsg, "%s - %s: %0.3f", group, descr, value);
+    triggerTerminalOutput = true;
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
+    Display_ShowValueFloat(descr, value);
+#endif
+}
+
 void Status_ValueChangedFloat(const char *descr, float value)
 {
     statusMsgShowTimer = 0;
@@ -265,6 +275,16 @@ void Status_ValueChangedIntArr(const char *descr, int value, int index)
 /*
  * update top line message including an integer value
  */
+void Status_ValueChangedInt(const char *group, const char *descr, int value)
+{
+    statusMsgShowTimer = 0;
+    sprintf(statusMsg, "%s - %s: %d", group, descr, value);
+    triggerTerminalOutput = true;
+#ifdef _DISPLAY_FROM_STATUS_ENABLED
+    Display_ShowValueInt(descr, value);
+#endif
+}
+
 void Status_ValueChangedInt(const char *descr, int value)
 {
     statusMsgShowTimer = 0;

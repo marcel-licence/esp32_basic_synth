@@ -396,7 +396,7 @@ void loop()
     Reverb_Process(fl_sample, SAMPLE_BUFFER_SIZE);
 
 #ifdef ESP32
-    memcpy(fr_sample,  fl_sample, sizeof(fr_sample));
+    memcpy(fr_sample, fl_sample, sizeof(fr_sample));
 
     /*
      * Output the audio
@@ -477,7 +477,7 @@ void App_UsbMidiShortMsgReceived(uint8_t *msg)
  * Test functions
  */
 #if defined(I2C_SCL) && defined (I2C_SDA)
-void  ScanI2C(void)
+void ScanI2C(void)
 {
     Wire.begin(I2C_SDA, I2C_SCL);
 

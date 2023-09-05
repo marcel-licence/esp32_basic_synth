@@ -178,6 +178,5 @@
 #endif /* ARDUINO_RASPBERRY_PI_PICO */
 
 
-
 #endif /* CONFIG_H_ */
 

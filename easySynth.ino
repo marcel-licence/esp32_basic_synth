@@ -237,7 +237,6 @@ struct notePlayerT
 };
 
 
-
 struct notePlayerT voicePlayer[MAX_POLY_VOICE];
 
 uint32_t voc_act = 0;
@@ -352,7 +351,6 @@ void Synth_Init()
         Synth_ChannelSettingInit(&chCfg[i]);
     }
 }
-
 
 
 static void Synth_ChannelSettingInit(struct channelSetting_s *setting)
@@ -980,7 +978,7 @@ void Synth_SetParam(uint8_t slider, float value)
         Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
         break;
     case SYNTH_PARAM_MAIN_FILT_RESO:
-        filtReso =  0.5f + 10 * value * value * value; /* min q is 0.5 here */
+        filtReso = 0.5f + 10 * value * value * value; /* min q is 0.5 here */
         Serial.printf("main filter reso: %0.3f\n", filtReso);
         Filter_Calculate(filtCutoff, filtReso, &filterGlobalC);
         break;
