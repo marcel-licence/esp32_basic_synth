@@ -7,8 +7,8 @@ Below you will find a list of build which can be configured and should compile w
 <b>Version:</b> 1.0.6<br />
 <b>Board:</b> ESP32 Dev Module<br />
 <br />
-<b>Program storage space:</b> 699098 bytes<br />
-<b>Dynamic memory:</b> 49820 bytes<br />
+<b>Program storage space:</b> 694394 bytes<br />
+<b>Dynamic memory:</b> 49476 bytes<br />
 <br />
 <b>PSRAM:</b> Disabled<br />
 <b>Partition Scheme:</b> Default 4MB with spiffs (1.2MB APP/1.5MB SPIFFS)<br />
@@ -30,7 +30,7 @@ Below you will find a list of build which can be configured and should compile w
     </tr>
     <tr>
         <td>ML SynthTools</td>
-        <td>1.0.1</td>
+        <td>1.3.1</td>
         <td>https://github.com/marcel-licence/ML_SynthTools</td>
         <td>https://github.com/marcel-licence/ML_SynthTools.git</td>
         <td>False</td>
@@ -57,33 +57,33 @@ Below you will find a list of build which can be configured and should compile w
         <td>True</td>
     </tr>
     <tr>
-        <td>Adafruit GFX Library</td>
-        <td>1.10.10</td>
-        <td>https://github.com/adafruit/Adafruit-GFX-Library</td>
+        <td>FS</td>
+        <td>1.0</td>
         <td></td>
+        <td></td>
+        <td>True</td>
+    </tr>
+    <tr>
+        <td>LittleFS_esp32</td>
+        <td>1.0.6</td>
+        <td>https://github.com/lorol/LITTLEFS</td>
+        <td>https://github.com/lorol/LITTLEFS</td>
         <td>False</td>
     </tr>
     <tr>
-        <td>Adafruit SSD1306</td>
-        <td>2.4.5</td>
-        <td>https://github.com/adafruit/Adafruit_SSD1306</td>
+        <td>SD_MMC</td>
+        <td>1.0</td>
         <td></td>
-        <td>False</td>
-    </tr>
-    <tr>
-        <td>Adafruit BusIO</td>
-        <td>1.14.1</td>
-        <td>https://github.com/adafruit/Adafruit_BusIO</td>
-        <td>https://github.com/adafruit/Adafruit_BusIO</td>
-        <td>False</td>
+        <td></td>
+        <td>True</td>
     </tr>
 </table><hr>
 <a name="espressif_2.0.7_esp32_esp32"></a><b>Core:</b> <a h_ref="https://github.com/espressif/arduino-esp32">ESP32 Arduino </a><br />
 <b>Version:</b> 2.0.7<br />
 <b>Board:</b> ESP32 Dev Module<br />
 <br />
-<b>Program storage space:</b> 765761 bytes<br />
-<b>Dynamic memory:</b> 54180 bytes<br />
+<b>Program storage space:</b> 760313 bytes<br />
+<b>Dynamic memory:</b> 54052 bytes<br />
 <br />
 <b>JTAG Adapter:</b> Disabled<br />
 <b>PSRAM:</b> Disabled<br />
@@ -109,7 +109,7 @@ Below you will find a list of build which can be configured and should compile w
     </tr>
     <tr>
         <td>ML SynthTools</td>
-        <td>1.0.1</td>
+        <td>1.3.1</td>
         <td>https://github.com/marcel-licence/ML_SynthTools</td>
         <td>https://github.com/marcel-licence/ML_SynthTools.git</td>
         <td>False</td>
@@ -136,24 +136,24 @@ Below you will find a list of build which can be configured and should compile w
         <td>True</td>
     </tr>
     <tr>
-        <td>Adafruit GFX Library</td>
-        <td>1.10.10</td>
-        <td>https://github.com/adafruit/Adafruit-GFX-Library</td>
+        <td>FS</td>
+        <td>2.0.0</td>
         <td></td>
-        <td>False</td>
+        <td>https://github.com/espressif/arduino-esp32.git</td>
+        <td>True</td>
     </tr>
     <tr>
-        <td>Adafruit SSD1306</td>
-        <td>2.4.5</td>
-        <td>https://github.com/adafruit/Adafruit_SSD1306</td>
+        <td>LittleFS</td>
+        <td>2.0.0</td>
         <td></td>
-        <td>False</td>
+        <td>https://github.com/espressif/arduino-esp32.git</td>
+        <td>True</td>
     </tr>
     <tr>
-        <td>Adafruit BusIO</td>
-        <td>1.14.1</td>
-        <td>https://github.com/adafruit/Adafruit_BusIO</td>
-        <td>https://github.com/adafruit/Adafruit_BusIO</td>
-        <td>False</td>
+        <td>SD_MMC</td>
+        <td>2.0.0</td>
+        <td></td>
+        <td>https://github.com/espressif/arduino-esp32.git</td>
+        <td>True</td>
     </tr>
 </table>
