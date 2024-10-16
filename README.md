@@ -86,3 +86,14 @@ Derived projects
 ---
 
 MichaelPNolan added a phyicial interface, knobs etc. to make it standalone: https://github.com/MichaelPNolan/StandAloneSynth37key/tree/main/esp32_alone_synth
+
+
+# Support & Donations
+
+If you appreciate the work done on this project and would like to support its development, I would be more than happy to accept donations!
+
+For more information on how to donate, please send an email to:
+
+📧 **marcel.licence.o@gmail.com**
+
+Thank you for your support!
